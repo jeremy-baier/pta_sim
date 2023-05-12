@@ -21,6 +21,9 @@ parser.add_argument('--adv_noise_psrs_only', dest='adv_noise_psrs_only',
                     action='store_true',
                     default=False,
                     help='Option to use only advanced noise pulsars in analysis.')
+parser.add_argument('--alt_pol_psrs_only', dest='alt_pol_psrs_only',
+                    action='store_true', default=False,
+                    help='Option to use only the alternative polarization pulsars [J0613-0200, J0030+0541]')
 parser.add_argument('--bayes_ephem', dest='bayes_ephem', action='store_true',
                     default=False,
                     help='Option to use Bayes Ephemeris Modeling.')

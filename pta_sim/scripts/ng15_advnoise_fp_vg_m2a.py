@@ -57,6 +57,12 @@ else:
                           'J2010-1323', #6 **
                           'J2043+1711',#40
                           'J2317+1439'] #17 *
+    alt_pol_psr_list = ['J0613-0200',
+                        'J0030+0451']
+    #toggle whether to include all anm psrs or only alt pol psrs
+    #if args.alt_pol_psrs_only:
+    #    adv_noise_psr_list = alt_pol_psr_list
+
 
 
     def dm_exponential_dip(tmin, tmax, idx=2, sign='negative', name='dmexp', vary=True):
@@ -103,7 +109,7 @@ else:
     # timing model
     s = gp_signals.TimingModel()
     # s = gp_signals.MarginalizingTimingModel()
-    
+
     # intrinsic red noise
     s += blocks.red_noise_block(prior='log-uniform', Tspan=args.tspan, components=30)
 
@@ -157,18 +163,18 @@ else:
                                         components=args.n_gwbfreqs,
                                         gamma_val=args.gamma_gw,
                                         name='gw')
-    
+
     #####
     for psr in pkl_psrs:
         # Filter out other Adv Noise Pulsars
         if psr.name in adv_noise_psr_list:
             ### Get the new pulsar object
             ## Remember that J1713's pickle is something you made yourself ##
-            filepath = '/gscratch/gwastro/hazboun/nanograv/noise/noise_model_selection/no_dmx_pickles/'
-            filepath += '{0}_ng12p5yr_v3_nodmx_ePSR.pkl'.format(psr.name)
-            with open(filepath,'rb') as fin:
-                new_psr=pickle.load(fin)
-
+            #filepath = '/gscratch/gwastro/hazboun/nanograv/noise/noise_model_selection/no_dmx_pickles/'
+            #filepath += '{0}_ng12p5yr_v3_nodmx_ePSR.pkl'.format(psr.name)
+            #with open(filepath,'rb') as fin:
+                #new_psr=pickle.load(fin)
+            new_psr=psr
             ### Get kwargs dictionary
             kwarg_path = args.model_kwargs_path
             kwarg_path += f'{psr.name}_model_kwargs.json'
@@ -258,7 +264,7 @@ else:
                             'vary_dm':False,
                             'tm_svd':False,
                             'vary_chrom':False})
-            
+
             ### Load the appropriate single_pulsar_model
             psr_models.append(model_singlepsr_noise(new_psr, **kwargs))#(new_psr))
             final_psrs.append(new_psr)
@@ -290,9 +296,9 @@ groups = sampler.get_parameter_groups(pta_crn)
 groups.extend(sampler.get_psr_groups(pta_crn))
 Sampler = sampler.setup_sampler(pta_crn, outdir=args.outdir, resume=True,
                             empirical_distr = args.emp_distr, groups=groups)
-    
 
-   
+
+
 
 # Sampler.addProposalToCycle(Sampler.jp.draw_from_psr_empirical_distr, 70)
 # Sampler.addProposalToCycle(Sampler.jp.draw_from_psr_prior, 10)
