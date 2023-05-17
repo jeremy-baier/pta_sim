@@ -61,7 +61,7 @@ else:
                         'J0030+0451']
     #toggle whether to include all anm psrs or only alt pol psrs
     #if args.alt_pol_psrs_only:
-    #    adv_noise_psr_list = alt_pol_psr_list
+    adv_noise_psr_list = alt_pol_psr_list
 
 
 
