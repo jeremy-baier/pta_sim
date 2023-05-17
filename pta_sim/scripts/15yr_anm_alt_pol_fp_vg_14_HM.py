@@ -230,9 +230,9 @@ else:
     '''
     # the below is how Dallas does it
     cpl = altpol_psd(log10A = log10A, gamma = gamma, kappa = kappa)
-    cs_alt_pol = gp_signals.FourierBasisCommonGP(spectrum = cpl, components=None,name = 'gw_st',Tspan=None,
+    cs_alt_pol = gp_signals.FourierBasisCommonGP(spectrum = cpl, components=30,name = 'gw_st',Tspan=args.tspan,
                         orf = model_orfs.st_orf())
-    cs = gp_signals.FourierBasisCommonGP(spectrum = cpl, components=None,name = 'gw',Tspan=None,
+    cs = gp_signals.FourierBasisCommonGP(spectrum = cpl, components=30,name = 'gw',Tspan=args.tspan,
                         orf = model_orfs.hd_orf())
     # deleted modes arg from above
     #####
