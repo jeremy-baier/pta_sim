@@ -73,6 +73,10 @@ else:
     model_labels = []
     ptas = {}
 
+    crn_bins = args.n_gwbfreqs
+    freqs = np.arange(1/args.tspan, (crn_bins+.1)/args.tspan, 1/args.tspan)
+    rfreqs = np.delete(freqs,[1])
+
     #and here let's setup some infrastructure for the alt_pol
     log10_TT = parameter.Uniform(-18,-11)('gw_log10_A_TT')
     log10_ST = parameter.Uniform(-18,-11)('gw_log10_A_ST')
@@ -229,10 +233,10 @@ else:
     # the above is how jeff did it
     '''
     # the below is how Dallas does it
-    cpl = altpol_psd(log10A = log10A, gamma = gamma, kappa = kappa)
-    cs_alt_pol = gp_signals.FourierBasisCommonGP(spectrum = cpl, components=30,name = 'gw_st',Tspan=args.tspan,
+    cpl = altpol_psd(f=freqs, log10A = log10A, gamma = gamma, kappa = kappa, components=args.n_gwbfreqs)
+    cs_alt_pol = gp_signals.FourierBasisCommonGP(spectrum = cpl, components=args.n_gwbfreqs,name = 'gw_st',Tspan=args.tspan,
                         orf = model_orfs.st_orf())
-    cs = gp_signals.FourierBasisCommonGP(spectrum = cpl, components=30,name = 'gw',Tspan=args.tspan,
+    cs = gp_signals.FourierBasisCommonGP(spectrum = cpl, components=args.n_gwbfreqs,name = 'gw',Tspan=args.tspan,
                         orf = model_orfs.hd_orf())
     # deleted modes arg from above
     #####
