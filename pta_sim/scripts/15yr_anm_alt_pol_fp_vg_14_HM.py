@@ -219,14 +219,16 @@ else:
                                                #altpol_psd(log10A = log10A, gamma = gamma, kappa = kappa),
                                         prior='log-uniform',
                                         Tspan=args.tspan,
-                                        orf=model_orfs.st_orf(),
+                                        #orf=model_orfs.st_orf(),
+                                        orf='st'
                                         components=args.n_gwbfreqs,
                                         gamma_val=args.gamma_gw,
                                         name='gw_st')
     cs = blocks.common_red_noise_block(psd=args.psd,
                                         prior='log-uniform',
                                         Tspan=args.tspan,
-                                        orf=model_orfs.hd_orf(),
+                                        #orf=model_orfs.hd_orf(),
+                                        orf = 'hd'
                                         components=args.n_gwbfreqs,
                                         gamma_val=args.gamma_gw,
                                         name='gw')
