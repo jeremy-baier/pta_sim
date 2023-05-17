@@ -519,9 +519,9 @@ else:
 
 print('Signal Names', Sampler.jp.snames)
 
-
+print("yeeeet")
 x0 = super_model.initial_sample()
-
+print("skeeeeet")
 Sampler.sample(x0, args.niter, ladder=ladder, SCAMweight=200, AMweight=100,
                DEweight=200, burn=3000, writeHotChains=args.writeHotChains,
                hotChain=args.hot_chain, Tskip=100, Tmax=args.tempmax)
