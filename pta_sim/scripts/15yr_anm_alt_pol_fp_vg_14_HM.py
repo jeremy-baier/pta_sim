@@ -88,6 +88,30 @@ else:
     alpha_vl = parameter.Uniform(-2, 3/2)('gw_alpha_vl')
     alpha_sl = parameter.Uniform(-2, 3/2)('gw_alpha_sl')
     gamma = parameter.Uniform(0,7)('gw_gamma')
+    #jeremy adding this from Dallas code HM_runs_copy2.py
+    @signal_base.function
+    def altpol_psd(f,log10A = -15,gamma=13/3,kappa = 0,p_dist =1, components = 2):
+
+        """
+        Creates a psd for altpol searches by utilized Enterprises powerlaw function
+        but multiply by the prefactor that accounts for non-quadrapolar radiation.
+        f: frequency
+        log10A: Log amplitude parameter
+        gamma: spectral index
+        kappa: kappa parameter in the prefactor
+        """
+
+        #use enterprise signals to make powerlaw based on A and gamma
+        #L = p_dist*const.kpc/const.c #to include p_dist however it isn't used here
+        df = np.diff(np.concatenate((np.array([0]), f[::components])))
+        pl = (10 ** log10A) ** 2 / 12.0 / np.pi ** 2 * const.fyr ** (gamma - 3) * f ** (-gamma) * np.repeat(df, components)
+
+        #prefactor as defined in Neil's paper
+        prefactor = (1 + kappa**2) / (1 + kappa**2 * (f / const.fyr)**(-2/3))
+
+        psd = prefactor * pl  #psd is pl times the prefactor
+
+        return psd
 
     cpl = altpol_psd(log10A = log10A, gamma = gamma, kappa = kappa)
 
@@ -418,30 +442,7 @@ def draw_from_gw_gamma_prior(self, x, iter, beta):
 
     return q, float(lqxy)
 
-#jeremy adding this from Dallas code HM_runs_copy2.py
-@signal_base.function
-def altpol_psd(f,log10A = -15,gamma=13/3,kappa = 0,p_dist =1, components = 2):
 
-    """
-    Creates a psd for altpol searches by utilized Enterprises powerlaw function
-    but multiply by the prefactor that accounts for non-quadrapolar radiation.
-    f: frequency
-    log10A: Log amplitude parameter
-    gamma: spectral index
-    kappa: kappa parameter in the prefactor
-    """
-
-    #use enterprise signals to make powerlaw based on A and gamma
-    #L = p_dist*const.kpc/const.c #to include p_dist however it isn't used here
-    df = np.diff(np.concatenate((np.array([0]), f[::components])))
-    pl = (10 ** log10A) ** 2 / 12.0 / np.pi ** 2 * const.fyr ** (gamma - 3) * f ** (-gamma) * np.repeat(df, components)
-
-    #prefactor as defined in Neil's paper
-    prefactor = (1 + kappa**2) / (1 + kappa**2 * (f / const.fyr)**(-2/3))
-
-    psd = prefactor * pl  #psd is pl times the prefactor
-
-    return psd
 
 # if args.sw_fit_path is None:
     # sampler.JumpProposal.draw_from_sw_prior = draw_from_sw_prior
