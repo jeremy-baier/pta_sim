@@ -113,7 +113,7 @@ else:
 
         return psd
 
-    #cpl = altpol_psd(log10A = log10A, gamma = gamma, kappa = kappa)
+    #cpl1 = altpol_psd(log10A = log10A, gamma = gamma, kappa = kappa)
 
     def dm_exponential_dip(tmin, tmax, idx=2, sign='negative', name='dmexp', vary=True):
         """
@@ -208,7 +208,8 @@ else:
         orf = 'hd'
     else:
         orf = None
-    cs_alt_pol = blocks.common_red_noise_block(psd=altpol_psd(log10A = log10A, gamma = gamma, kappa = kappa),
+    cs_alt_pol = blocks.common_red_noise_block(psd=args.psd,
+                                               #altpol_psd(log10A = log10A, gamma = gamma, kappa = kappa),
                                         prior='log-uniform',
                                         Tspan=args.tspan,
                                         orf=orf,
