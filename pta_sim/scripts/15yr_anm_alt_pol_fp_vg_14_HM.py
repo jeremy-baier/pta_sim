@@ -209,7 +209,9 @@ else:
         orf = 'hd'
     else:
         orf = None
+    '''
     cs_alt_pol = blocks.common_red_noise_block(psd=args.psd,
+                                                #maybe a psd is fine here? dallas says so
                                                #altpol_psd(log10A = log10A, gamma = gamma, kappa = kappa),
                                         prior='log-uniform',
                                         Tspan=args.tspan,
@@ -224,8 +226,15 @@ else:
                                         components=args.n_gwbfreqs,
                                         gamma_val=args.gamma_gw,
                                         name='gw')
-    # this cs block is crn below in Dallas code 
-    #crn = gp_signals.FourierBasisGP(spectrum=cpl,components=None,name='gw',Tspan=None,modes=rfreqs)
+    # the above is how jeff did it
+    '''
+    # the below is how Dallas does it
+    #cpl = altpol_psd(log10A = log10A, gamma = gamma, kappa = kappa)
+    cs_alt_pol = gp_signals.FourierBasisCommonGP(spectrum = args.psd, components=None,name = 'gw_st',Tspan=None,
+                        orf = model_orfs.hd_st())
+    cs = gp_signals.FourierBasisCommonGP(spectrum = args.psd, components=None,name = 'gw',Tspan=None,
+                        orf = model_orfs.hd_orf())
+    # deleted modes arg from above
     #####
     for psr,psr_nodmx in zip(pkl_psrs,nodmx_psrs):
         # Filter out other Adv Noise Pulsars
@@ -494,7 +503,7 @@ if args.psd =='powerlaw' and args.gamma_gw is None:
 
 
 try:
-    achrom_freqs = get_freqs(pta_crn, signal_id='gw')
+    achrom_freqs = get_freqs(ptas, signal_id='gw')
     np.savetxt(args.outdir + 'achrom_rn_freqs.txt', achrom_freqs, fmt='%.18e')
 except:
     pass
