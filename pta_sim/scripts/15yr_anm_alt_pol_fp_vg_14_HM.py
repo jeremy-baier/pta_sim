@@ -228,7 +228,7 @@ else:
                                         prior='log-uniform',
                                         Tspan=args.tspan,
                                         #orf=model_orfs.hd_orf(),
-                                        orf = 'hd'
+                                        orf = 'hd',
                                         components=args.n_gwbfreqs,
                                         gamma_val=args.gamma_gw,
                                         name='gw')
