@@ -17,6 +17,7 @@ from enterprise_extensions.models import model_singlepsr_noise
 from enterprise_extensions import blocks
 from enterprise_extensions import gp_kernels as gpk
 from enterprise_extensions import chromatic as chrom
+from enterprise_extensions.hypermodel import HyperModel
 import la_forge.core as co
 
 import pta_sim
@@ -64,8 +65,31 @@ else:
                           'J0030+0451',# #1.4 **
                           'J0613-0200',]# -25 * 
     #toggle between the full adv noise list and the alt pol psrs
-    adv_noise_psr_list = alt_pol_psr_list
+    if args.alt_pol_psrs_only:
+        adv_noise_psr_list = alt_pol_psr_list
 
+    #set up some infrastructure for the hypermodel
+    model_labels = []
+    ptas = {}
+
+    #and here let's setup some infrastructure for the alt_pol
+    log10_TT = parameter.Uniform(-18,-11)('gw_log10_A_TT')
+    log10_ST = parameter.Uniform(-18,-11)('gw_log10_A_ST')
+    log10_VL = parameter.Uniform(-18,-11)('gw_log10_A_VL')
+    log10_SL = parameter.Uniform(-18,-11)('gw_log10_A_SL')
+    log10A = parameter.Uniform(-18,-11)('gw_log10_A')
+
+    kappa = parameter.Uniform(0,10)('gw_kappa')
+    tau = parameter.Uniform(-1.5,1.5)('gw_tau')
+    #tau0 = parameter.Constant(0)('gw_tau0')
+
+    alpha_tt = parameter.Uniform(-2, 3/2)('gw_alpha_tt')
+    alpha_st = parameter.Uniform(-2, 3/2)('gw_alpha_st')
+    alpha_vl = parameter.Uniform(-2, 3/2)('gw_alpha_vl')
+    alpha_sl = parameter.Uniform(-2, 3/2)('gw_alpha_sl')
+    gamma = parameter.Uniform(0,7)('gw_gamma')
+
+    cpl = altpol_psd(log10A = log10A, gamma = gamma, kappa = kappa)
 
     def dm_exponential_dip(tmin, tmax, idx=2, sign='negative', name='dmexp', vary=True):
         """
@@ -110,18 +134,20 @@ else:
 
     # timing model
     tm = gp_signals.TimingModel()
-    # s = gp_signals.MarginalizingTimingModel()
+    #s = gp_signals.MarginalizingTimingModel()
     
     # intrinsic red noise
     s = blocks.red_noise_block(prior='log-uniform', Tspan=args.tspan, components=30)
+    #rn in dallas code ^^
 
     Tspan_PTA = args.tspan
     log10_rho = parameter.Uniform(-10,-4,size=30)
     fs = gpp.free_spectrum(log10_rho=log10_rho)
     log10_A = parameter.Constant()
     gamma = parameter.Constant()
-    plaw_pr = gpp.powerlaw(log10_A=log10_A,gamma=gamma)
-    plaw = gp_signals.FourierBasisGP(plaw_pr,components=30,Tspan=args.tspan)
+    #comment these out because they mess with dallas definition of gamma and i dont think we use them
+    #plaw_pr = gpp.powerlaw(log10_A=log10_A,gamma=gamma)
+    #plaw = gp_signals.FourierBasisGP(plaw_pr,components=30,Tspan=args.tspan)
     rn  = gp_signals.FourierBasisGP(fs,components=30,Tspan=args.tspan, name='excess_noise')
 
     m = s #plaw + rn
@@ -158,6 +184,13 @@ else:
         orf = 'hd'
     else:
         orf = None
+    cs_alt_pol = blocks.common_red_noise_block(psd=cpl,
+                                        prior='log-uniform',
+                                        Tspan=args.tspan,
+                                        orf=orf,
+                                        components=args.n_gwbfreqs,
+                                        gamma_val=args.gamma_gw,
+                                        name='gw_tt')
     cs = blocks.common_red_noise_block(psd=args.psd,
                                         prior='log-uniform',
                                         Tspan=args.tspan,
@@ -165,7 +198,8 @@ else:
                                         components=args.n_gwbfreqs,
                                         gamma_val=args.gamma_gw,
                                         name='gw')
-    
+    # this cs block is crn below in Dallas code 
+    #crn = gp_signals.FourierBasisGP(spectrum=cpl,components=None,name='gw',Tspan=None,modes=rfreqs)
     #####
     for psr,psr_nodmx in zip(pkl_psrs,nodmx_psrs):
         # Filter out other Adv Noise Pulsars
@@ -278,14 +312,14 @@ else:
         print(f'\r{psr.name} Complete.',end='',flush=True)
 
     crn_models = [(m + cs)(psr) for psr,m in  zip(final_psrs,psr_models)]
-    # gw_models = [(m + gw)(psr) for psr,m in  zip(final_psrs,psr_models)]
+    alt_pol_models = [(m + cs_alt_pol)(psr) for psr,m in  zip(final_psrs,psr_models)]
 
     pta_crn = signal_base.PTA(crn_models)
-    # pta_gw = signal_base.PTA(gw_models)
+    pta_alt_pol = signal_base.PTA(alt_pol_models)
 
     # # delta_common=0.,
-    # ptas = {0:pta_crn,
-    #         1:pta_gw}
+     ptas = {0:pta_crn,
+             1:pta_alt_pol}
 
     pta_crn.set_default_params(noise)
 
@@ -295,8 +329,14 @@ else:
 
 groups = sampler.get_parameter_groups(pta_crn)
 groups.extend(sampler.get_psr_groups(pta_crn))
-Sampler = sampler.setup_sampler(pta_crn, outdir=args.outdir, resume=True,
-                            empirical_distr = args.emp_distr, groups=groups)
+
+
+#j here we put together the hyper_model in its full glory
+super_model = HyperModel(ptas)
+#i removed pta_curn as arg from setup_sampler
+Sampler = super_model.setup_sampler(outdir=args.outdir, resume=True,
+                            empirical_distr = args.emp_distr, groups=groups, 
+                            human = "jeremy")
     
 
    
@@ -361,6 +401,30 @@ def draw_from_sw4p39_prior(self, x, iter, beta):
 
 def draw_from_gw_gamma_prior(self, x, iter, beta):
 
+#jeremy adding this from Dallas code HM_runs_copy2.py
+@signal_base.function
+def altpol_psd(f,log10A = -15,gamma=13/3,kappa = 0,p_dist =1, components = 2):
+
+    """
+    Creates a psd for altpol searches by utilized Enterprises powerlaw function
+    but multiply by the prefactor that accounts for non-quadrapolar radiation.
+    f: frequency
+    log10A: Log amplitude parameter
+    gamma: spectral index
+    kappa: kappa parameter in the prefactor
+    """
+
+    #use enterprise signals to make powerlaw based on A and gamma
+    #L = p_dist*const.kpc/const.c #to include p_dist however it isn't used here
+    df = np.diff(np.concatenate((np.array([0]), f[::components])))
+    pl = (10 ** log10A) ** 2 / 12.0 / np.pi ** 2 * const.fyr ** (gamma - 3) * f ** (-gamma) * np.repeat(df, components)
+
+    #prefactor as defined in Neil's paper
+    prefactor = (1 + kappa**2) / (1 + kappa**2 * (f / const.fyr)**(-2/3))
+
+    psd = prefactor * pl  #psd is pl times the prefactor
+
+    return psd
     q = x.copy()
     lqxy = 0
 
@@ -447,6 +511,9 @@ else:
     ladder = None
 
 print('Signal Names', Sampler.jp.snames)
+
+
+x0 = super_model.initial_sample()
 
 Sampler.sample(x0, args.niter, ladder=ladder, SCAMweight=200, AMweight=100,
                DEweight=200, burn=3000, writeHotChains=args.writeHotChains,

@@ -63,7 +63,8 @@ else:
     alt_pol_psr_list = ['J0030+0451',# #1.4 **
                        'J0613-0200',]# -25 * 
     #toggle between the full adv noise list and the alt pol psrs
-    adv_noise_psr_list = alt_pol_psr_list
+    if args.alt_pol_psrs_only:
+        adv_noise_psr_list = alt_pol_psr_list
 
     def dm_exponential_dip(tmin, tmax, idx=2, sign='negative', name='dmexp', vary=True):
         """
