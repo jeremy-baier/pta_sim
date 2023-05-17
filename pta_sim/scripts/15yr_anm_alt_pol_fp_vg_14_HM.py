@@ -15,6 +15,7 @@ from enterprise import constants as const
 
 from enterprise_extensions.models import model_singlepsr_noise
 from enterprise_extensions import blocks
+from enterprise_extensions import model_orfs
 from enterprise_extensions import gp_kernels as gpk
 from enterprise_extensions import chromatic as chrom
 from enterprise_extensions.hypermodel import HyperModel
@@ -212,14 +213,14 @@ else:
                                                #altpol_psd(log10A = log10A, gamma = gamma, kappa = kappa),
                                         prior='log-uniform',
                                         Tspan=args.tspan,
-                                        orf=orf,
+                                        orf=model_orfs.st_orf(),
                                         components=args.n_gwbfreqs,
                                         gamma_val=args.gamma_gw,
-                                        name='gw_tt')
+                                        name='gw_st')
     cs = blocks.common_red_noise_block(psd=args.psd,
                                         prior='log-uniform',
                                         Tspan=args.tspan,
-                                        orf=orf,
+                                        orf=model_orfs.hd_orf(),
                                         components=args.n_gwbfreqs,
                                         gamma_val=args.gamma_gw,
                                         name='gw')
@@ -336,23 +337,23 @@ else:
 
         print(f'\r{psr.name} Complete.',end='',flush=True)
 
-    crn_models = [(m + cs)(psr) for psr,m in  zip(final_psrs,psr_models)]
+    hd_models = [(m + cs)(psr) for psr,m in  zip(final_psrs,psr_models)]
     alt_pol_models = [(m + cs_alt_pol)(psr) for psr,m in  zip(final_psrs,psr_models)]
 
-    pta_crn = signal_base.PTA(crn_models)
-    pta_crn.set_default_params(noise)
+    pta_hd = signal_base.PTA(hd_models)
+    pta_hd.set_default_params(noise)
     pta_alt_pol = signal_base.PTA(alt_pol_models)
     pta_alt_pol.set_default_params(noise)
 
     # # delta_common=0.,
-    ptas = {0:pta_crn,
+    ptas = {0:pta_hd,
              1:pta_alt_pol}
 
     #pta_crn.set_default_params(noise)
 
     if args.mk_ptapkl:
         with open(args.pta_pkl,'wb') as fout:
-            cloudpickle.dump(pta_crn,fout)
+            cloudpickle.dump(ptas,fout)
 
 #i dont think we need groups for the HM
 #groups = sampler.get_parameter_groups(ptas)
