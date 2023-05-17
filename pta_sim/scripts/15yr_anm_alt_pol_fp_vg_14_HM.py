@@ -318,7 +318,7 @@ else:
     pta_alt_pol = signal_base.PTA(alt_pol_models)
 
     # # delta_common=0.,
-     ptas = {0:pta_crn,
+    ptas = {0:pta_crn,
              1:pta_alt_pol}
 
     pta_crn.set_default_params(noise)
@@ -400,6 +400,23 @@ def draw_from_sw4p39_prior(self, x, iter, beta):
     return q, float(lqxy)
 
 def draw_from_gw_gamma_prior(self, x, iter, beta):
+
+    q = x.copy()
+    lqxy = 0
+
+    # draw parameter from signal model
+    signal_name = [par for par in self.pnames
+                   if ('gw' in par and 'gamma' in par)][0]
+    idx = list(self.pnames).index(signal_name)
+    param = self.params[idx]
+
+    q[self.pmap[str(param)]] = np.random.uniform(param.prior._defaults['pmin'], param.prior._defaults['pmax'])
+
+    # forward-backward jump probability
+    lqxy = (param.get_logpdf(x[self.pmap[str(param)]]) -
+            param.get_logpdf(q[self.pmap[str(param)]]))
+
+    return q, float(lqxy)
 
 #jeremy adding this from Dallas code HM_runs_copy2.py
 @signal_base.function
