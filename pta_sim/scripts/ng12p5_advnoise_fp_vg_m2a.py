@@ -57,7 +57,11 @@ else:
                           'J2010-1323', #6 **
                           'J2043+1711',#40
                           'J2317+1439'] #17 *
-
+    alt_pol_psr_list = [
+                          'J0613-0200',# -25 *
+                          'J0030+0451',# #1.4 **
+                        ]
+    adv_noise_psr_list = alt_pol_psr_list
 
     def dm_exponential_dip(tmin, tmax, idx=2, sign='negative', name='dmexp', vary=True):
         """
