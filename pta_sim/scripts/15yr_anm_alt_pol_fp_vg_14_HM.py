@@ -348,14 +348,15 @@ else:
     ptas = {0:pta_crn,
              1:pta_alt_pol}
 
-    pta_crn.set_default_params(noise)
+    #pta_crn.set_default_params(noise)
 
     if args.mk_ptapkl:
         with open(args.pta_pkl,'wb') as fout:
             cloudpickle.dump(pta_crn,fout)
 
-groups = sampler.get_parameter_groups(ptas)
-groups.extend(sampler.get_psr_groups(ptas))
+#i dont think we need groups for the HM
+#groups = sampler.get_parameter_groups(ptas)
+#groups.extend(sampler.get_psr_groups(ptas))
 
 
 #j here we put together the hyper_model in its full glory
