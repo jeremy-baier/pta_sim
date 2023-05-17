@@ -361,9 +361,9 @@ else:
 
 #j here we put together the hyper_model in its full glory
 super_model = HyperModel(ptas)
-#i removed pta_curn as arg from setup_sampler
+#i removed pta_curn as arg from setup_sampler and groups=groups
 Sampler = super_model.setup_sampler(outdir=args.outdir, resume=True,
-                            empirical_distr = args.emp_distr, groups=groups, human = "jeremy")
+                            empirical_distr = args.emp_distr, human = "jeremy")
     
 
    
