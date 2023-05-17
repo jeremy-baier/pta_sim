@@ -37,6 +37,9 @@ else:
     with open('{0}'.format(args.pickle), "rb") as f:
         pkl_psrs = pickle.load(f)
 
+    with open('{0}'.format(args.pickle_nodmx), "rb") as f:
+        nodmx_psrs = pickle.load(f)
+
     adv_noise_psr_list = ['B1855+09', #32
                           'B1937+21', #42
                           'J0030+0451',# #1.4 **
@@ -57,12 +60,15 @@ else:
                           'J2010-1323', #6 **
                           'J2043+1711',#40
                           'J2317+1439'] #17 *
+<<<<<<< HEAD
     alt_pol_psr_list = ['J0613-0200',
                         'J0030+0451']
     #toggle whether to include all anm psrs or only alt pol psrs
     #if args.alt_pol_psrs_only:
     adv_noise_psr_list = alt_pol_psr_list
 
+=======
+>>>>>>> 8e4fa606be06636b36d539718785546b02b70c6b
 
 
     def dm_exponential_dip(tmin, tmax, idx=2, sign='negative', name='dmexp', vary=True):
@@ -107,11 +113,11 @@ else:
         return dmexp
 
     # timing model
-    s = gp_signals.TimingModel()
+    tm = gp_signals.TimingModel()
     # s = gp_signals.MarginalizingTimingModel()
-
+    
     # intrinsic red noise
-    s += blocks.red_noise_block(prior='log-uniform', Tspan=args.tspan, components=30)
+    s = blocks.red_noise_block(prior='log-uniform', Tspan=args.tspan, components=30)
 
     Tspan_PTA = args.tspan
     log10_rho = parameter.Uniform(-10,-4,size=30)
@@ -163,23 +169,19 @@ else:
                                         components=args.n_gwbfreqs,
                                         gamma_val=args.gamma_gw,
                                         name='gw')
-
+    
     #####
-    for psr in pkl_psrs:
+    for psr,psr_nodmx in zip(pkl_psrs,nodmx_psrs):
         # Filter out other Adv Noise Pulsars
         if psr.name in adv_noise_psr_list:
-            ### Get the new pulsar object
-            ## Remember that J1713's pickle is something you made yourself ##
-            #filepath = '/gscratch/gwastro/hazboun/nanograv/noise/noise_model_selection/no_dmx_pickles/'
-            #filepath += '{0}_ng12p5yr_v3_nodmx_ePSR.pkl'.format(psr.name)
-            #with open(filepath,'rb') as fin:
-                #new_psr=pickle.load(fin)
-            new_psr=psr
+            new_psr = psr_nodmx
+
             ### Get kwargs dictionary
             kwarg_path = args.model_kwargs_path
             kwarg_path += f'{psr.name}_model_kwargs.json'
             with open(kwarg_path, 'r') as fin:
                 kwargs = json.load(fin)
+
 
     #         if 'wideband' in kwargs.keys():
     #             kwargs['is_wideband'] = kwargs['wideband']
@@ -255,8 +257,8 @@ else:
                 ### Turn SW model off. Add in stand alone SW model and common process. Return model.
                 kwargs.update({'dm_sw_deter':False,
                                'white_vary':args.vary_wn,
-                            'extra_sigs':m + mean_sw,
-                            'psr_model':True,
+                               'extra_sigs':m + mean_sw,
+                               'psr_model':True,
                             'chrom_df':None,
                             'dm_df':None,
                             'red_var': False,
@@ -264,13 +266,16 @@ else:
                             'vary_dm':False,
                             'tm_svd':False,
                             'vary_chrom':False})
-
+            
             ### Load the appropriate single_pulsar_model
             psr_models.append(model_singlepsr_noise(new_psr, **kwargs))#(new_psr))
             final_psrs.append(new_psr)
         # Treat all other DMX pulsars in the standard way
         elif not args.adv_noise_psrs_only:
-            s2 = s + blocks.white_noise_block(vary=False,tnequad=False, inc_ecorr=True, select='backend')
+            s2 = s + tm + blocks.white_noise_block(vary=False,
+                                                   tnequad=False,
+                                                   inc_ecorr=True,
+                                                   select='backend')
             psr_models.append(s2)#(psr))
             final_psrs.append(psr)
 
@@ -296,9 +301,9 @@ groups = sampler.get_parameter_groups(pta_crn)
 groups.extend(sampler.get_psr_groups(pta_crn))
 Sampler = sampler.setup_sampler(pta_crn, outdir=args.outdir, resume=True,
                             empirical_distr = args.emp_distr, groups=groups)
+    
 
-
-
+   
 
 # Sampler.addProposalToCycle(Sampler.jp.draw_from_psr_empirical_distr, 70)
 # Sampler.addProposalToCycle(Sampler.jp.draw_from_psr_prior, 10)
