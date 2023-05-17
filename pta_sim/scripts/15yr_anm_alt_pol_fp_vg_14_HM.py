@@ -68,7 +68,7 @@ else:
     if args.alt_pol_psrs_only:
         adv_noise_psr_list = alt_pol_psr_list
 
-    #set up some infrastructure for the hypermodel
+    #set up some infrastructure for the hypermodel 
     model_labels = []
     ptas = {}
 
