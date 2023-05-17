@@ -442,22 +442,6 @@ def altpol_psd(f,log10A = -15,gamma=13/3,kappa = 0,p_dist =1, components = 2):
     psd = prefactor * pl  #psd is pl times the prefactor
 
     return psd
-    q = x.copy()
-    lqxy = 0
-
-    # draw parameter from signal model
-    signal_name = [par for par in self.pnames
-                   if ('gw' in par and 'gamma' in par)][0]
-    idx = list(self.pnames).index(signal_name)
-    param = self.params[idx]
-
-    q[self.pmap[str(param)]] = np.random.uniform(param.prior._defaults['pmin'], param.prior._defaults['pmax'])
-
-    # forward-backward jump probability
-    lqxy = (param.get_logpdf(x[self.pmap[str(param)]]) -
-            param.get_logpdf(q[self.pmap[str(param)]]))
-
-    return q, float(lqxy)
 
 # if args.sw_fit_path is None:
     # sampler.JumpProposal.draw_from_sw_prior = draw_from_sw_prior
