@@ -352,15 +352,15 @@ else:
         with open(args.pta_pkl,'wb') as fout:
             cloudpickle.dump(pta_crn,fout)
 
-#groups = sampler.get_parameter_groups(pta_crn)
-#groups.extend(sampler.get_psr_groups(pta_crn))
+groups = sampler.get_parameter_groups(ptas)
+groups.extend(sampler.get_psr_groups(ptas))
 
 
 #j here we put together the hyper_model in its full glory
 super_model = HyperModel(ptas)
 #i removed pta_curn as arg from setup_sampler
 Sampler = super_model.setup_sampler(outdir=args.outdir, resume=True,
-                            empirical_distr = args.emp_distr, )#groups=groups, human = "jeremy")
+                            empirical_distr = args.emp_distr, groups=groups, human = "jeremy")
     
 
    
