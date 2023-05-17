@@ -340,7 +340,9 @@ else:
     alt_pol_models = [(m + cs_alt_pol)(psr) for psr,m in  zip(final_psrs,psr_models)]
 
     pta_crn = signal_base.PTA(crn_models)
+    pta_crn.set_default_params(noise)
     pta_alt_pol = signal_base.PTA(alt_pol_models)
+    pta_alt_pol.set_default_params(noise)
 
     # # delta_common=0.,
     ptas = {0:pta_crn,
