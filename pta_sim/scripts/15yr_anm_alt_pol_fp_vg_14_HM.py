@@ -213,7 +213,7 @@ else:
         orf = 'hd'
     else:
         orf = None
-    '''
+    
     cs_alt_pol = blocks.common_red_noise_block(psd=args.psd,
                                                 #maybe a psd is fine here? dallas says so
                                                #altpol_psd(log10A = log10A, gamma = gamma, kappa = kappa),
@@ -231,13 +231,13 @@ else:
                                         gamma_val=args.gamma_gw,
                                         name='gw')
     # the above is how jeff did it
-    '''
+    
     # the below is how Dallas does it
-    cpl = altpol_psd(f=freqs, log10A = log10A, gamma = gamma, kappa = kappa, components=args.n_gwbfreqs)
-    cs_alt_pol = gp_signals.FourierBasisCommonGP(spectrum = cpl, components=args.n_gwbfreqs,name = 'gw_st',Tspan=args.tspan,
-                        orf = model_orfs.st_orf())
-    cs = gp_signals.FourierBasisCommonGP(spectrum = cpl, components=args.n_gwbfreqs,name = 'gw',Tspan=args.tspan,
-                        orf = model_orfs.hd_orf())
+    #cpl = altpol_psd(f=freqs, log10A = log10A, gamma = gamma, kappa = kappa, components=args.n_gwbfreqs)
+    #cs_alt_pol = gp_signals.FourierBasisCommonGP(spectrum = cpl, components=args.n_gwbfreqs,name = 'gw_st',Tspan=args.tspan,
+                        #orf = model_orfs.st_orf())
+    #cs = gp_signals.FourierBasisCommonGP(spectrum = cpl, components=args.n_gwbfreqs,name = 'gw',Tspan=args.tspan,
+                        #orf = model_orfs.hd_orf())
     # deleted modes arg from above
     #####
     for psr,psr_nodmx in zip(pkl_psrs,nodmx_psrs):
