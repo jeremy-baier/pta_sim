@@ -379,6 +379,9 @@ else:
 super_model = HyperModel(ptas)
 groups = super_model.get_parameter_groups()
 #i removed pta_curn as arg from setup_sampler and groups=groups
+print("groups: ", groups)
+print("param names: ", super_model.param_names)
+print("param names vals: ", super_model.models.values)
 Sampler = super_model.setup_sampler(outdir=args.outdir, resume=True,
                             empirical_distr = args.emp_distr, human = "jeremy",
                             groups=groups)
