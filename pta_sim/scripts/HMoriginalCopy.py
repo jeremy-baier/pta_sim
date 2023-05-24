@@ -32,7 +32,7 @@ with open(args.noisepath, 'r') as fin:
     noise =json.load(fin)
 
 if os.path.exists(args.pta_pkl):
-    print("Loading in PTA from pickle file...")
+    print("Loading in PTA pickle file...")
     with open(args.pta_pkl, "rb") as f:
         ptas = cloudpickle.load(f)
 else:
@@ -62,24 +62,63 @@ else:
                           'J2010-1323', #6 **
                           'J2043+1711',#40
                           'J2317+1439'] #17 *
-    #toggle between the full adv noise list and the alt pol psr subsets
+    alt_pol_psr_list = [
+                          'J0030+0451',# #1.4 **
+                          'J0613-0200',]# -25 * 
+    #toggle between the full adv noise list and the alt pol psrs
     if args.alt_pol_psrs_only:
-        adv_noise_psr_list = ['J0030+0451',# #1.4 **
-                              'J0613-0200',]# -25 * 
-    if args.J0613_only:
-        adv_noise_psr_list = ['J0613-0200']
-        if args.alt_pol_psrs_only or args.J0030_only:
-            ValueError("Conflicting ANM pulsar lists")
-    if args.J0030_only:
-        adv_noise_psr_list = ['J0030+0451'] 
-        if args.alt_pol_psrs_only or args.J0613_only:
-            ValueError("Conflicting ANM pulsar lists")
-    print("Setting up advanced noise modeling for pulsars...")
-    print(adv_noise_psr_list)
+        adv_noise_psr_list = alt_pol_psr_list
 
     #set up some infrastructure for the hypermodel 
     model_labels = []
     ptas = {}
+
+    crn_bins = args.n_gwbfreqs
+    freqs = np.arange(1/args.tspan, (crn_bins+.1)/args.tspan, 1/args.tspan)
+    rfreqs = np.delete(freqs,[1])
+
+    #and here let's setup some infrastructure for the alt_pol
+    #log10_TT = parameter.Uniform(-18,-11)('gw_log10_A_TT')
+    #log10_ST = parameter.Uniform(-18,-11)('gw_log10_A_ST')
+    #log10_VL = parameter.Uniform(-18,-11)('gw_log10_A_VL')
+    #log10_SL = parameter.Uniform(-18,-11)('gw_log10_A_SL')
+    log10A_gw = parameter.Uniform(-18,-11)('gw_log10_A')
+
+    #kappa = parameter.Uniform(0,10)('gw_kappa')
+    #tau = parameter.Uniform(-1.5,1.5)('gw_tau')
+    #tau0 = parameter.Constant(0)('gw_tau0')
+
+    #alpha_tt = parameter.Uniform(-2, 3/2)('gw_alpha_tt')
+    #alpha_st = parameter.Uniform(-2, 3/2)('gw_alpha_st')
+    #alpha_vl = parameter.Uniform(-2, 3/2)('gw_alpha_vl')
+    #alpha_sl = parameter.Uniform(-2, 3/2)('gw_alpha_sl')
+    gamma = parameter.Uniform(0,7)('gw_gamma')
+    #jeremy adding this from Dallas code HM_runs_copy2.py
+    @signal_base.function
+    def altpol_psd(f,log10A = -15,gamma=13/3,kappa = 0,p_dist =1, components = 2):
+
+        """
+        Creates a psd for altpol searches by utilized Enterprises powerlaw function
+        but multiply by the prefactor that accounts for non-quadrapolar radiation.
+        f: frequency
+        log10A: Log amplitude parameter
+        gamma: spectral index
+        kappa: kappa parameter in the prefactor
+        """
+
+        #use enterprise signals to make powerlaw based on A and gamma
+        #L = p_dist*const.kpc/const.c #to include p_dist however it isn't used here
+        df = np.diff(np.concatenate((np.array([0]), f[::components])))
+        pl = (10 ** log10A) ** 2 / 12.0 / np.pi ** 2 * const.fyr ** (gamma - 3) * f ** (-gamma) * np.repeat(df, components)
+
+        #prefactor as defined in Neil's paper
+        prefactor = (1 + kappa**2) / (1 + kappa**2 * (f / const.fyr)**(-2/3))
+
+        psd = prefactor * pl  #psd is pl times the prefactor
+
+        return psd
+
+    #cpl1 = altpol_psd(log10A = log10A, gamma = gamma, kappa = kappa)
 
     def dm_exponential_dip(tmin, tmax, idx=2, sign='negative', name='dmexp', vary=True):
         """
@@ -123,15 +162,24 @@ else:
         return dmexp
 
     # timing model
-    tm = gp_signals.MarginalizingTimingModel()
+    tm = gp_signals.TimingModel()
     #s = gp_signals.MarginalizingTimingModel()
     
     # intrinsic red noise
     s = blocks.red_noise_block(prior='log-uniform', Tspan=args.tspan, components=30)
+    #rn in dallas code ^^
+
+    Tspan_PTA = args.tspan
+    #log10_rho = parameter.Uniform(-10,-4,size=30)
+    #fs = gpp.free_spectrum(log10_rho=log10_rho)
+    log10_A = parameter.Constant()
+    gamma = parameter.Constant()
+    #comment these out because they mess with dallas definition of gamma and i dont think we use them
+    #plaw_pr = gpp.powerlaw(log10_A=log10_A,gamma=gamma)
+    #plaw = gp_signals.FourierBasisGP(plaw_pr,components=30,Tspan=args.tspan)
     rn  = gp_signals.FourierBasisGP(fs,components=30,Tspan=args.tspan, name='excess_noise')
 
-    m = s 
-    #plaw + rn
+    m = s #plaw + rn
 
     # adding white-noise, separating out Adv Noise Psrs, and acting on psr objects
     final_psrs = []
@@ -161,7 +209,14 @@ else:
         mean_sw += deterministic_signals.Deterministic(deter_sw_p,
                                                        name='sw_4p39')
 
+    if args.gwb_on:
+        orf = 'hd'
+    else:
+        orf = None
+    
     cs_alt_pol = blocks.common_red_noise_block(psd=args.psd,
+                                                #maybe a psd is fine here? dallas says so
+                                               #altpol_psd(log10A = log10A, gamma = gamma, kappa = kappa),
                                         prior='log-uniform',
                                         Tspan=args.tspan,
                                         #orf=model_orfs.st_orf(),
@@ -177,22 +232,104 @@ else:
                                         components=args.n_gwbfreqs,
                                         gamma_val=args.gamma_gw,
                                         name='gw')
-    ##### below loops over pulsars if statements separate out dmx and no_dmx
+    # the above is how jeff did it
+    
+    # the below is how Dallas does it
+    #cpl = altpol_psd(f=freqs, log10A = log10A, gamma = gamma, kappa = kappa, components=args.n_gwbfreqs)
+    #cs_alt_pol = gp_signals.FourierBasisCommonGP(spectrum = cpl, components=args.n_gwbfreqs,name = 'gw_st',Tspan=args.tspan,
+                        #orf = model_orfs.st_orf())
+    #cs = gp_signals.FourierBasisCommonGP(spectrum = cpl, components=args.n_gwbfreqs,name = 'gw',Tspan=args.tspan,
+                        #orf = model_orfs.hd_orf())
+    # deleted modes arg from above
+    #####
     for psr,psr_nodmx in zip(pkl_psrs,nodmx_psrs):
         # Filter out other Adv Noise Pulsars
         if psr.name in adv_noise_psr_list:
             new_psr = psr_nodmx
+
             ### Get kwargs dictionary
             kwarg_path = args.model_kwargs_path
             kwarg_path += f'{psr.name}_model_kwargs.json'
             with open(kwarg_path, 'r') as fin:
                 kwargs = json.load(fin)
 
-            ### Turn SW model off. Add in stand alone SW model and common process. Return model.
-            kwargs.update({'dm_sw_deter':False,
+
+    #         if 'wideband' in kwargs.keys():
+    #             kwargs['is_wideband'] = kwargs['wideband']
+    #             kwargs.__delitem__('wideband')
+            ## Build special DM GP models for B1937
+            if psr.name == 'B1937+21':
+                # Periodic GP kernel for DM
+                log10_sigma = parameter.Constant()
+                log10_ell = parameter.Constant()
+                log10_p = parameter.Constant()
+                log10_gam_p = parameter.Constant()
+                dm_basis = gpk.linear_interp_basis_dm(dt=3*86400)
+                dm_prior = gpk.periodic_kernel(log10_sigma=log10_sigma,
+                                            log10_ell=log10_ell,
+                                            log10_gam_p=log10_gam_p,
+                                            log10_p=log10_p)
+                dmgp = gp_signals.BasisGP(dm_prior, dm_basis, name='dm_gp1')
+                # Periodic GP kernel for DM
+                log10_sigma2 = parameter.Constant()
+                log10_ell2 = parameter.Constant()
+                log10_p2 = parameter.Constant()
+                log10_gam_p2 = parameter.Constant()
+                dm_basis2 = gpk.linear_interp_basis_dm(dt=3*86400)
+                dm_prior2 = gpk.periodic_kernel(log10_sigma=log10_sigma2,
+                                            log10_ell=log10_ell2,
+                                            log10_gam_p=log10_gam_p2,
+                                            log10_p=log10_p2)
+                dmgp2 = gp_signals.BasisGP(dm_prior2, dm_basis2, name='dm_gp2')
+                ch_log10_sigma = parameter.Constant()
+                ch_log10_ell = parameter.Constant()
+                chm_basis = gpk.linear_interp_basis_chromatic(dt=3*86400, idx=4)
+                chm_prior = gpk.se_dm_kernel(log10_sigma=ch_log10_sigma, log10_ell=ch_log10_ell)
+                chromgp = gp_signals.BasisGP(chm_prior, chm_basis, name='chrom_gp')
+
+                kwargs.update({'dm_sw_deter':False,
                             'white_vary':args.vary_wn,
-                            'extra_sigs':m + mean_sw,
+                            'red_var': False,
+                            'extra_sigs':m + dmgp + dmgp2 + chromgp + mean_sw,
                             'psr_model':True,
+                            'chrom_df':None,
+                            'dm_df':None,
+                            'tm_marg':False,
+                            'tm_svd':False,
+                            'vary_dm':False,
+                            'vary_chrom':False})
+            elif psr.name == 'J1713+0747':
+                index = parameter.Constant()
+                ppta_dip = dm_exponential_dip(57506, 57514, idx=index, sign='negative', name='exp2', vary=False)
+
+                kwargs.update({'dm_dt':3,
+                            'dm_df':None,
+                            'chrom_dt':3,
+                            'dm_sw_deter':False,
+                            'white_vary':args.vary_wn,
+                            'dm_expdip':True,
+                            'dmexp_sign': 'negative',
+                            'num_dmdips':1,
+                            'dm_expdip_idx':[2],
+                            'dm_expdip_tmin':[54740],
+                            'dm_expdip_tmax':[54780],
+                            'dmdip_seqname':['dm_1'],
+                            'extra_sigs':m + mean_sw + ppta_dip,
+                            'psr_model':True,
+                            'red_var': False,
+                            'chrom_df':None,
+                            'dm_df':None,
+                            'tm_marg':False,
+                            'tm_svd':False,
+                            'vary_dm':False,
+                            'vary_chrom':False})
+            ## Treat all other Adv Noise pulsars the same
+            else:
+                ### Turn SW model off. Add in stand alone SW model and common process. Return model.
+                kwargs.update({'dm_sw_deter':False,
+                               'white_vary':args.vary_wn,
+                               'extra_sigs':m + mean_sw,
+                               'psr_model':True,
                             'chrom_df':None,
                             'dm_df':None,
                             'red_var': False,
@@ -200,6 +337,7 @@ else:
                             'vary_dm':False,
                             'tm_svd':False,
                             'vary_chrom':False})
+            
             ### Load the appropriate single_pulsar_model
             psr_models.append(model_singlepsr_noise(new_psr, **kwargs))#(new_psr))
             final_psrs.append(new_psr)
@@ -222,26 +360,46 @@ else:
     pta_alt_pol = signal_base.PTA(alt_pol_models)
     pta_alt_pol.set_default_params(noise)
 
+    # # delta_common=0.,
     ptas = {0:pta_hd,
              1:pta_alt_pol}
 
+    #pta_crn.set_default_params(noise)
+
     if args.mk_ptapkl:
-        print("Saving pickled pta to file ... ")
         with open(args.pta_pkl,'wb') as fout:
             cloudpickle.dump(ptas,fout)
 
-# here we put together the hyper_model in its full glory
+#i dont think we need groups for the HM
+#groups = sampler.get_parameter_groups(ptas)
+#groups.extend(sampler.get_psr_groups(ptas))
+
+
+#j here we put together the hyper_model in its full glory
 super_model = HyperModel(ptas)
 groups = super_model.get_parameter_groups()
 #i removed pta_curn as arg from setup_sampler and groups=groups
-print("Setting up hypermodel ...")
-Sampler = super_model.setup_sampler(outdir=args.outdir, 
-                                    resume=True,
-                                    empirical_distr = args.emp_distr, 
-                                    human = "jeremy",
-                                    groups=groups)
+print("groups: ", groups)
+print("param names: ", super_model.param_names)
+Sampler = super_model.setup_sampler(outdir=args.outdir, resume=True,
+                            empirical_distr = args.emp_distr, human = "jeremy",
+                            groups=groups)
     
 
+   
+
+# Sampler.addProposalToCycle(Sampler.jp.draw_from_psr_empirical_distr, 70)
+# Sampler.addProposalToCycle(Sampler.jp.draw_from_psr_prior, 10)
+# Sampler.addProposalToCycle(Sampler.jp.draw_from_empirical_distr, 120)
+# Sampler.addProposalToCycle(Sampler.jp.draw_from_red_prior, 60)
+# Sampler.addProposalToCycle(Sampler.jp.draw_from_dm_gp_prior, 40)
+# Sampler.addProposalToCycle(Sampler.jp.draw_from_chrom_gp_prior, 10)
+# Sampler.addProposalToCycle(Sampler.jp.draw_from_dmexpcusp_prior, 10)
+# Sampler.addProposalToCycle(Sampler.jp.draw_from_par_prior(['n_earth',
+#                                                            'np_4p39',
+#                                                            'dm_cusp',
+#                                                            'dmexp']),
+#                                                            30)
 def draw_from_sw_prior(self, x, iter, beta):
 
     q = x.copy()
@@ -308,6 +466,45 @@ def draw_from_gw_gamma_prior(self, x, iter, beta):
     return q, float(lqxy)
 
 
+
+# if args.sw_fit_path is None:
+    # sampler.JumpProposal.draw_from_sw_prior = draw_from_sw_prior
+    # sampler.JumpProposal.draw_from_sw4p39_prior = draw_from_sw4p39_prior
+
+    # Sampler.addProposalToCycle(Sampler.jp.draw_from_sw_prior, 25)
+    # Sampler.addProposalToCycle(Sampler.jp.draw_from_sw4p39_prior, 25)
+
+if args.psd == 'spectrum':
+    def draw_from_rho_prior(self, x, iter, beta):
+
+        q = x.copy()
+        lqxy = 0
+
+        # draw parameter from signal model
+        parnames = [par.name for par in self.params]
+        pname = [pnm for pnm in parnames if 'rho' in pnm][0]
+
+        idx = parnames.index(pname)
+        param = self.params[idx]
+
+        if param.size:
+            idx2 = np.random.randint(0, param.size)
+            q[self.pmap[str(param)]][idx2] = param.sample()[idx2]
+
+        # scalar parameter
+        else:
+            q[self.pmap[str(param)]] = param.sample()
+
+
+        # forward-backward jump probability
+        lqxy = (param.get_logpdf(x[self.pmap[str(param)]]) -
+                param.get_logpdf(q[self.pmap[str(param)]]))
+
+        return q, float(lqxy)
+
+    sampler.JumpProposal.draw_from_rho_prior = draw_from_rho_prior
+    Sampler.addProposalToCycle(Sampler.jp.draw_from_rho_prior, 25)
+
 if args.psd =='powerlaw' and args.gamma_gw is None:
     sampler.JumpProposal.draw_from_gw_gamma_prior = draw_from_gw_gamma_prior
     Sampler.addProposalToCycle(Sampler.jp.draw_from_gw_gamma_prior, 25)
@@ -326,9 +523,9 @@ else:
 
 print('Signal Names', Sampler.jp.snames)
 
-print("Drawing initial sample from the prior...")
+print("yeeeet")
 x0 = super_model.initial_sample()
-print("Beginning to sample...")
+print("skeeeeet")
 Sampler.sample(x0, args.niter, ladder=ladder, SCAMweight=200, AMweight=100,
                DEweight=200, burn=3000, writeHotChains=args.writeHotChains,
                hotChain=args.hot_chain, Tskip=100, Tmax=args.tempmax)

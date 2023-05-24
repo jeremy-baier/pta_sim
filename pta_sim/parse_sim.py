@@ -24,6 +24,12 @@ parser.add_argument('--adv_noise_psrs_only', dest='adv_noise_psrs_only',
 parser.add_argument('--alt_pol_psrs_only', dest='alt_pol_psrs_only',
                     action='store_true', default=False,
                     help='Option to use only the alternative polarization pulsars [J0613-0200, J0030+0541]')
+parser.add_argument('--J0613_only', dest='J0613_only',
+                    action='store_true', default=False,
+                    help='Option to use only the alternative polarization pulsar J0613-0200')
+parser.add_argument('--J0030_only', dest='J0030_only',
+                    action='store_true', default=False,
+                    help='Option to use only the alternative polarization pulsars J0030+0541')
 parser.add_argument('--bayes_ephem', dest='bayes_ephem', action='store_true',
                     default=False,
                     help='Option to use Bayes Ephemeris Modeling.')

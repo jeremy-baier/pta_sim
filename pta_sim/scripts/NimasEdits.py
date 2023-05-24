@@ -21,6 +21,7 @@ from enterprise_extensions import chromatic as chrom
 from enterprise_extensions.hypermodel import HyperModel
 import la_forge.core as co
 
+import pta_sim
 import pta_sim.parse_sim as parse_sim
 from pta_sim.bayes import chain_length_bool, save_core, get_freqs, filter_psr_path
 args = parse_sim.arguments()
@@ -32,7 +33,7 @@ with open(args.noisepath, 'r') as fin:
     noise =json.load(fin)
 
 if os.path.exists(args.pta_pkl):
-    print("Loading in PTA from pickle file...")
+    print("Loading in PTA pickle file...")
     with open(args.pta_pkl, "rb") as f:
         ptas = cloudpickle.load(f)
 else:
@@ -62,6 +63,7 @@ else:
                           'J2010-1323', #6 **
                           'J2043+1711',#40
                           'J2317+1439'] #17 *
+
     #toggle between the full adv noise list and the alt pol psr subsets
     if args.alt_pol_psrs_only:
         adv_noise_psr_list = ['J0030+0451',# #1.4 **
@@ -78,9 +80,10 @@ else:
     print(adv_noise_psr_list)
 
     #set up some infrastructure for the hypermodel 
-    model_labels = []
     ptas = {}
+    crn_bins = args.n_gwbfreqs
 
+    #function for expoential dip adv noise modeling
     def dm_exponential_dip(tmin, tmax, idx=2, sign='negative', name='dmexp', vary=True):
         """
         Returns chromatic exponential dip (i.e. TOA advance):
@@ -122,24 +125,50 @@ else:
 
         return dmexp
 
+
+#################################Standard Noise Modeling############################
     # timing model
     tm = gp_signals.MarginalizingTimingModel()
-    #s = gp_signals.MarginalizingTimingModel()
-    
     # intrinsic red noise
-    s = blocks.red_noise_block(prior='log-uniform', Tspan=args.tspan, components=30)
-    rn  = gp_signals.FourierBasisGP(fs,components=30,Tspan=args.tspan, name='excess_noise')
+    rn = blocks.red_noise_block(prior='log-uniform', Tspan=args.tspan, components=args.n_gwbfreqs)
+    wn = blocks.white_noise_block(vary=False, 
+                                  tnequad=False,
+                                  inc_ecorr=True,
+                                  select='backend')
+    log10A_gw = parameter.Uniform(-18,-11)('gw_log10_A')
+    gamma_gw = parameter.Uniform(0,7)('gw_gamma')
+    plaw_gw = gpp.powerlaw(log10_A=log10A_gw,gamma=gamma_gw)
+    #gw = gp_signals.FourierBasisGP(plaw_gw, components=14,Tspan=args.tspan, name='gw')
+    gw = blocks.common_red_noise_block(psd=args.psd,
+                                       prior='log-uniform',
+                                       Tspan=args.tspan,
+                                       #orf=model_orfs.hd_orf(),
+                                       orf = 'hd',
+                                       components=args.n_gwbfreqs,
+                                       gamma_val=args.gamma_gw,
+                                       name='gw')
+    gw_alt_pol = blocks.common_red_noise_block(psd=args.psd,
+                                        prior='log-uniform',
+                                        Tspan=args.tspan,
+                                        #orf=model_orfs.st_orf(),
+                                        orf='st',
+                                        components=args.n_gwbfreqs,
+                                        gamma_val=args.gamma_gw,
+                                        name='gw_st')
+    
+    s_std = tm + wn + rn + gw
+    s_std_alt = tm + wn + rn +gw_alt_pol
 
-    m = s 
-    #plaw + rn
-
+#################################Advanced Noise Modeling############################
+    # timing model
     # adding white-noise, separating out Adv Noise Psrs, and acting on psr objects
     final_psrs = []
     psr_models = []
-    ### Add a stand alone SW deter model
+
+    ### Solar wind modeling set up
     bins = np.arange(53215, 59200, 180)
     bins *= 24*3600 #Convert to secs
-    # n_earth = chrom.solar_wind.ACE_SWEPAM_Parameter(size=bins.size-1)('n_earth')
+
     if args.sw_fit_path is None:
         n_earth = parameter.Uniform(0,30,size=bins.size-1)('n_earth')
         np_earth = parameter.Uniform(-4, -2)('np_4p39')
@@ -160,26 +189,14 @@ else:
                                                         log10_ne=True)
         mean_sw += deterministic_signals.Deterministic(deter_sw_p,
                                                        name='sw_4p39')
+    
 
-    cs_alt_pol = blocks.common_red_noise_block(psd=args.psd,
-                                        prior='log-uniform',
-                                        Tspan=args.tspan,
-                                        #orf=model_orfs.st_orf(),
-                                        orf='st',
-                                        components=args.n_gwbfreqs,
-                                        gamma_val=args.gamma_gw,
-                                        name='gw_st')
-    cs = blocks.common_red_noise_block(psd=args.psd,
-                                        prior='log-uniform',
-                                        Tspan=args.tspan,
-                                        #orf=model_orfs.hd_orf(),
-                                        orf = 'hd',
-                                        components=args.n_gwbfreqs,
-                                        gamma_val=args.gamma_gw,
-                                        name='gw')
-    ##### below loops over pulsars if statements separate out dmx and no_dmx
+
+############################## Set up pulsar objects #############################
     for psr,psr_nodmx in zip(pkl_psrs,nodmx_psrs):
-        # Filter out other Adv Noise Pulsars
+        # this if statement deals with the advanced noise pulsars!!
+        
+        ### ADV NOISE PSRS ###
         if psr.name in adv_noise_psr_list:
             new_psr = psr_nodmx
             ### Get kwargs dictionary
@@ -187,11 +204,13 @@ else:
             kwarg_path += f'{psr.name}_model_kwargs.json'
             with open(kwarg_path, 'r') as fin:
                 kwargs = json.load(fin)
-
+            
+            # here i have removed the special treatment of J1713 and J1937
             ### Turn SW model off. Add in stand alone SW model and common process. Return model.
             kwargs.update({'dm_sw_deter':False,
                             'white_vary':args.vary_wn,
-                            'extra_sigs':m + mean_sw,
+                            #i added this rn right here to be aligned with Jeff code
+                            'extra_sigs':rn + mean_sw,
                             'psr_model':True,
                             'chrom_df':None,
                             'dm_df':None,
@@ -200,16 +219,14 @@ else:
                             'vary_dm':False,
                             'tm_svd':False,
                             'vary_chrom':False})
+            
             ### Load the appropriate single_pulsar_model
             psr_models.append(model_singlepsr_noise(new_psr, **kwargs))#(new_psr))
             final_psrs.append(new_psr)
-        # Treat all other DMX pulsars in the standard way
+
+        ### STARDARD PULSARS ###
         elif not args.adv_noise_psrs_only:
-            s2 = s + tm + blocks.white_noise_block(vary=False,
-                                                   tnequad=False,
-                                                   inc_ecorr=True,
-                                                   select='backend')
-            psr_models.append(s2)#(psr))
+            psr_models.append(s_std)#(psr))
             final_psrs.append(psr)
 
         print(f'\r{psr.name} Complete.',end='',flush=True)
@@ -222,26 +239,29 @@ else:
     pta_alt_pol = signal_base.PTA(alt_pol_models)
     pta_alt_pol.set_default_params(noise)
 
+    # # delta_common=0.,
     ptas = {0:pta_hd,
              1:pta_alt_pol}
 
     if args.mk_ptapkl:
-        print("Saving pickled pta to file ... ")
+        print("Saving a PTA to file...")
         with open(args.pta_pkl,'wb') as fout:
             cloudpickle.dump(ptas,fout)
 
-# here we put together the hyper_model in its full glory
+
+
+#Here we put together the hyper_model in its full glory
 super_model = HyperModel(ptas)
 groups = super_model.get_parameter_groups()
 #i removed pta_curn as arg from setup_sampler and groups=groups
-print("Setting up hypermodel ...")
-Sampler = super_model.setup_sampler(outdir=args.outdir, 
-                                    resume=True,
-                                    empirical_distr = args.emp_distr, 
-                                    human = "jeremy",
-                                    groups=groups)
+Sampler = super_model.setup_sampler(outdir=args.outdir, resume=True,
+                            empirical_distr = args.emp_distr, human = "jeremy",
+                            groups=groups)
     
 
+   
+
+###################### Functions for various jump proposals that we probably dont use ###########
 def draw_from_sw_prior(self, x, iter, beta):
 
     q = x.copy()
@@ -307,11 +327,40 @@ def draw_from_gw_gamma_prior(self, x, iter, beta):
 
     return q, float(lqxy)
 
+if args.psd == 'spectrum':
+    def draw_from_rho_prior(self, x, iter, beta):
+
+        q = x.copy()
+        lqxy = 0
+
+        # draw parameter from signal model
+        parnames = [par.name for par in self.params]
+        pname = [pnm for pnm in parnames if 'rho' in pnm][0]
+
+        idx = parnames.index(pname)
+        param = self.params[idx]
+
+        if param.size:
+            idx2 = np.random.randint(0, param.size)
+            q[self.pmap[str(param)]][idx2] = param.sample()[idx2]
+
+        # scalar parameter
+        else:
+            q[self.pmap[str(param)]] = param.sample()
+
+
+        # forward-backward jump probability
+        lqxy = (param.get_logpdf(x[self.pmap[str(param)]]) -
+                param.get_logpdf(q[self.pmap[str(param)]]))
+
+        return q, float(lqxy)
+
+    sampler.JumpProposal.draw_from_rho_prior = draw_from_rho_prior
+    Sampler.addProposalToCycle(Sampler.jp.draw_from_rho_prior, 25)
 
 if args.psd =='powerlaw' and args.gamma_gw is None:
     sampler.JumpProposal.draw_from_gw_gamma_prior = draw_from_gw_gamma_prior
     Sampler.addProposalToCycle(Sampler.jp.draw_from_gw_gamma_prior, 25)
-
 
 try:
     achrom_freqs = get_freqs(ptas, signal_id='gw')
@@ -324,11 +373,9 @@ if args.ladderpath is not None:
 else:
     ladder = None
 
-print('Signal Names', Sampler.jp.snames)
-
-print("Drawing initial sample from the prior...")
+print("Drawing initial sample....")
 x0 = super_model.initial_sample()
-print("Beginning to sample...")
+print("Starting to sample....")
 Sampler.sample(x0, args.niter, ladder=ladder, SCAMweight=200, AMweight=100,
                DEweight=200, burn=3000, writeHotChains=args.writeHotChains,
                hotChain=args.hot_chain, Tskip=100, Tmax=args.tempmax)
