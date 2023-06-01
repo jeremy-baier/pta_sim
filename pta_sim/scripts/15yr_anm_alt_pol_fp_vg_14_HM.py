@@ -165,7 +165,7 @@ else:
                                         prior='log-uniform',
                                         Tspan=args.tspan,
                                         #orf=model_orfs.st_orf(),
-                                        orf='st',
+                                        orf=args.orf2,
                                         components=args.n_gwbfreqs,
                                         gamma_val=args.gamma_gw,
                                         name='gw_st')
@@ -173,7 +173,7 @@ else:
                                         prior='log-uniform',
                                         Tspan=args.tspan,
                                         #orf=model_orfs.hd_orf(),
-                                        orf = 'hd',
+                                        orf = args.orf,
                                         components=args.n_gwbfreqs,
                                         gamma_val=args.gamma_gw,
                                         name='gw')
