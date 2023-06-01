@@ -128,7 +128,7 @@ else:
     
     # intrinsic red noise
     s = blocks.red_noise_block(prior='log-uniform', Tspan=args.tspan, components=30)
-    rn  = gp_signals.FourierBasisGP(fs,components=30,Tspan=args.tspan, name='excess_noise')
+    #rn  = gp_signals.FourierBasisGP(fs,components=30,Tspan=args.tspan, name='excess_noise')
 
     m = s 
     #plaw + rn
