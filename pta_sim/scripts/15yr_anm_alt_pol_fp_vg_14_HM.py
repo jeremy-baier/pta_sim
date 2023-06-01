@@ -162,7 +162,7 @@ else:
                                                        name='sw_4p39')
 
     if args.orf2 == "None":
-        args.orf=None
+        args.orf2=None
 
     cs_alt_pol = blocks.common_red_noise_block(psd=args.psd,
                                         prior='log-uniform',
