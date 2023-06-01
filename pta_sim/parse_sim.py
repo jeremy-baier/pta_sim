@@ -146,6 +146,9 @@ parser.add_argument('--obs', dest='obs', action='store',
 parser.add_argument('--orf', dest='orf', action='store',
                     type=str, default='hd',
                     help='Overlap Reduction Function to use as spatial correlations.')
+parser.add_argument('--orf2', dest='orf2', action='store',
+                    type=str, default='hd',
+                    help='Second overlap Reduction Function to use as spatial correlations in a hypermodel.')
 parser.add_argument('--outdir', dest='outdir', action='store', type=str,
                     default='./', help='Path directory for output.')
 parser.add_argument('--outtimdir', dest='outtimdir', action='store', type=str,
