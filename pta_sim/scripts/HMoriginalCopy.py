@@ -170,8 +170,8 @@ else:
     #rn in dallas code ^^
 
     Tspan_PTA = args.tspan
-    #log10_rho = parameter.Uniform(-10,-4,size=30)
-    #fs = gpp.free_spectrum(log10_rho=log10_rho)
+    log10_rho = parameter.Uniform(-10,-4,size=30)
+    fs = gpp.free_spectrum(log10_rho=log10_rho)
     log10_A = parameter.Constant()
     gamma = parameter.Constant()
     #comment these out because they mess with dallas definition of gamma and i dont think we use them
