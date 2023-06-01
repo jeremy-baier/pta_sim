@@ -161,6 +161,9 @@ else:
         mean_sw += deterministic_signals.Deterministic(deter_sw_p,
                                                        name='sw_4p39')
 
+    if args.orf2 == "None":
+        args.orf=None
+
     cs_alt_pol = blocks.common_red_noise_block(psd=args.psd,
                                         prior='log-uniform',
                                         Tspan=args.tspan,
