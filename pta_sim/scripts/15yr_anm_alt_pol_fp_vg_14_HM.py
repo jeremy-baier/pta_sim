@@ -127,6 +127,7 @@ else:
     #s = gp_signals.MarginalizingTimingModel()
     
     # intrinsic red noise
+    # 30 frequencies are appropriate here. see 15yr paper section 3
     s = blocks.red_noise_block(prior='log-uniform', Tspan=args.tspan, components=30)
     #rn  = gp_signals.FourierBasisGP(fs,components=30,Tspan=args.tspan, name='excess_noise')
 
