@@ -117,9 +117,11 @@ def resampler_statistics(target_likelihoods, approx_likelihoods):
     
     return resampler_stats
 
-def save_stats(stats):
-    np.save(arr=stats, file=args.outdir+args.save_as)
+def save_stats(stats, outdir=args.outdir, file_name=args.save_as):
+    #np.save(arr=stats, file=args.outdir+args.save_as)
     # FIXME : np.save only works for array-like data
+    with open(outdir+file_name) as fp:
+        json.dump(stats, fp)
     return 0
 
 
