@@ -3,6 +3,7 @@ import la_forge.core as co
 import cloudpickle as cp
 import multiprocess as mp
 from statistics import stdev
+import json
 import argparse
 
 
@@ -120,8 +121,11 @@ def resampler_statistics(target_likelihoods, approx_likelihoods):
 def save_stats(stats, outdir=args.outdir, file_name=args.save_as):
     #np.save(arr=stats, file=args.outdir+args.save_as)
     # FIXME : np.save only works for array-like data
-    with open(outdir+file_name) as fp:
-        json.dump(stats, fp)
+    #with open(outdir+file_name+'.json') as fp:
+        #fp.write(json.dumps(stats))
+    print("Saving results to ", args.outdir+args.save_as+'.pkl')
+    with open(outdir+file_name+'.pkl','wb') as fout:
+            cp.dump(stats, fout)
     return 0
 
 
