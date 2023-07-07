@@ -1,9 +1,13 @@
+#### example run from the command line
+#
+#
+#
+#
 import numpy as np
 import la_forge.core as co
 import cloudpickle as cp
 import multiprocess as mp
 from statistics import stdev
-import json
 import argparse
 
 
@@ -105,6 +109,8 @@ def resampler(core_samples_array, pta, processes=args.proc):
 
 def resampler_statistics(target_likelihoods, approx_likelihoods):
     resampler_stats = {}
+    resampler_stats['target_likelihoods'] = target_likelihoods
+    resampler_stats['approx_likelihoods'] = approx_likelihoods
     # calculate the ln_likelihood ratios.
     resampler_stats['ln_likelihood_ratios'] = target_likelihoods - approx_likelihoods
     # the bayes factor is the average of the "weights"
@@ -142,9 +148,9 @@ else:
 print("Resampling... ")
 target_likelihoods = resampler(core_samples_array=core_samples_array, pta=pta, processes=args.proc)
 
-stats = resampler_statistics(target_likelihoods=target_likelihoods, approx_likelihoods=approx_likelihoods)
+resampling_results = resampler_statistics(target_likelihoods=target_likelihoods, approx_likelihoods=approx_likelihoods)
 
-save_stats(stats)
+save_stats(resampling_results)
 print("Done.")
 
 
