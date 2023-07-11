@@ -434,7 +434,9 @@ if args.initsamp is None:
     #     noise[npar]=6.0
     # noise['np_4p39']=-2.86
     # x0 = np.array([noise[k] for k in pta_crn.param_names])
-    x0 = np.hstack(p.sample() for p in pta_crn.params)
+    #print([p.sample() for p in pta_crn.params])
+    #x0 = [p.sample() for p in pta_crn.params]
+    x0 = np.hstack([p.sample() for p in pta_crn.params])
 else:
     with open(args.initsamp, 'r') as fin:
         init = json.load(fin)

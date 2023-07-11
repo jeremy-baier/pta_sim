@@ -1,25 +1,30 @@
 #### example run from the command line
-#
-#
-#
-#
+# python3 /home/zeus/baierj/src/pta_sim/pta_sim/scripts/resampler.py\
+# --outdir /home/zeus/baierj/outdir/resampler_results --nsamps 1000 --model_core 0\
+# --pta_path /home/zeus/baierj/run_files/dallas_files/CURN_v_ST_65psr/pickled_ptas.pkl --pta_index 1 --save_as test1\
+# --chain_dir /home/zeus/baierj/run_files/dallas_files/CURN_v_ST_65psr\
+####
+
 import numpy as np
 import la_forge.core as co
 import cloudpickle as cp
 import multiprocess as mp
 from statistics import stdev
 import argparse
-
+import json
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--core_path', dest='core_path', action='store',
                     type=str, default=None,
                     help='Path to la_forge core.')
+parser.add_argument('--chain_dir', dest='chain_dir', action='store',
+                    type=str, default=None,
+                    help='Instead of passing a core, pass the chain directory for the approx distr.')
 parser.add_argument('--pta_path', dest='pta_path', action='store',
                     type=str, default=None,
                     help='Path to pickled pta object.')
 parser.add_argument('--nsamps', dest='nsamps', action='store',
-                    type=int, default=1,
+                    type=int, default=None,
                     help='approximate number of samples to use in resampling.')
 parser.add_argument('--model_core', dest='model_core', action='store',
                     type=int, default=None,
@@ -41,11 +46,23 @@ parser.add_argument('--save_as', dest='save_as', action='store',
 args = parser.parse_args()
 
 # load in la_forge core of approximate distribution from either a hypermodel core or a single core
+print(args.core_path)
+print(args.chain_dir)
+assert args.core_path or args.chain_dir is not None
+#assert args.core_path or args.chain_dir is None
 if args.model_core is None:
-    core = co.Core(corepath=args.core_path)
-elif args.model_core >= 0: 
-    hmc = co.HyperModelCore(corepath=args.core_path)
-    core = hmc.model_core(args.model_core)
+    if args.chain_dir is None:
+        core = co.Core(corepath=args.core_path)
+    elif args.core_path is None:
+        core = co.Core(chaindir=args.chain_dir)
+elif args.model_core >= 0:
+    if args.chain_dir is None:
+        hmc = co.HyperModelCore(corepath=args.core_path)
+        core = hmc.model_core(args.model_core)
+    elif args.core_path is None:
+        hmc = co.HyperModelCore(chaindir=args.chain_dir)
+        core = hmc.model_core(args.model_core)
+# FIXME: i dont think the below actually makese sense
 elif args.model_core <= 0:
     hmc = co.HyperModelCore(corepath=args.core_path)
     core1 = hmc.model_core(0) 
@@ -64,11 +81,16 @@ if args.pta_index is not None:
 ############### resampling functions ####################
 
 def setup_resampler(pta, core, nsamps):
-    ### take core (CURN) posterior samples and put them in a dictionary ###
-    # thin samples to about the length of nsamps
-    trim_idx = int(len(core.get_param('lnlike')) / nsamps)
-    # create dictionary of thinned samples
-    core_samples_dict = { key : core.get_param(key)[::trim_idx] for key in core.params }
+    ### take core posterior samples and put them in a dictionary ###
+    if args.nsamps is not None:
+        # thin samples to about the length of nsamps
+        trim_idx = int(len(core.get_param('lnlike')) / nsamps)
+        # create dictionary of thinned samples
+        core_samples_dict = { key : core.get_param(key)[::trim_idx] for key in core.params }
+    elif args.nsamps is None:
+        # use all posterior samples
+        core_samples_dict = { key : core.get_param(key)[:] for key in core.params }
+
     # take the lnlikelihood of the CURN samples and store them in a vector
     approx_likelihoods = core_samples_dict['lnlike']
     # make thinned dictionary into an (parameters, samples) array
@@ -114,7 +136,8 @@ def resampler_statistics(target_likelihoods, approx_likelihoods):
     # calculate the ln_likelihood ratios.
     resampler_stats['ln_likelihood_ratios'] = target_likelihoods - approx_likelihoods
     # the bayes factor is the average of the "weights"
-    resampler_stats['bayes_factor'] = sum(resampler_stats['ln_likelihood_ratios']) / len(resampler_stats['ln_likelihood_ratios'])
+    resampler_stats['ln_bayes_factor'] = sum(resampler_stats['ln_likelihood_ratios']) / len(resampler_stats['ln_likelihood_ratios'])
+    resampler_stats['bayes_factor'] = np.exp(resampler_stats['ln_bayes_factor'])
     print("Bayes factor:  ", resampler_stats['bayes_factor'])
     resampler_stats['Ns'] = len(resampler_stats['ln_likelihood_ratios'])
     resampler_stats['sigma_w'] = stdev(resampler_stats['ln_likelihood_ratios'])
@@ -124,14 +147,17 @@ def resampler_statistics(target_likelihoods, approx_likelihoods):
     
     return resampler_stats
 
-def save_stats(stats, outdir=args.outdir, file_name=args.save_as):
-    #np.save(arr=stats, file=args.outdir+args.save_as)
-    # FIXME : np.save only works for array-like data
-    #with open(outdir+file_name+'.json') as fp:
-        #fp.write(json.dumps(stats))
+def save_stats(resampler_stats, outdir=args.outdir, file_name=args.save_as):
+    #json cant handle np.array in diciontary so turn them into lists
+    for key in list(resampler_stats.keys()):
+        if type(resampler_stats[key]) == np.ndarray:
+                resampler_stats[key] = list(resampler_stats[key]) 
+    with open(outdir+file_name+'.json', 'w') as fp:
+        #json.dump(resampler_stats, fp)
+        fp.write(json.dumps(resampler_stats))
     print("Saving results to ", args.outdir+args.save_as+'.pkl')
-    with open(outdir+file_name+'.pkl','wb') as fout:
-            cp.dump(stats, fout)
+    #with open(outdir+file_name+'.pkl','wb') as fout:
+     #       cp.dump(stats, fout)
     return 0
 
 
