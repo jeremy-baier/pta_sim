@@ -17,6 +17,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--core_path', dest='core_path', action='store',
                     type=str, default=None,
                     help='Path to la_forge core.')
+parser.add_argument('--aux_core', dest='aux_core', action='store',
+                    type=str, default=None,
+                    help='Path to an additional core.')
 parser.add_argument('--chain_dir', dest='chain_dir', action='store',
                     type=str, default=None,
                     help='Instead of passing a core, pass the chain directory for the approx distr.')
@@ -46,8 +49,6 @@ parser.add_argument('--save_as', dest='save_as', action='store',
 args = parser.parse_args()
 
 # load in la_forge core of approximate distribution from either a hypermodel core or a single core
-print(args.core_path)
-print(args.chain_dir)
 assert args.core_path or args.chain_dir is not None
 #assert args.core_path or args.chain_dir is None
 if args.model_core is None:
@@ -55,6 +56,8 @@ if args.model_core is None:
         core = co.Core(corepath=args.core_path)
     elif args.core_path is None:
         core = co.Core(chaindir=args.chain_dir)
+    if args.aux_core is not None:
+        aux_core = co.Core(corepath=args.aux_core)
 elif args.model_core >= 0:
     if args.chain_dir is None:
         hmc = co.HyperModelCore(corepath=args.core_path)
@@ -62,6 +65,9 @@ elif args.model_core >= 0:
     elif args.core_path is None:
         hmc = co.HyperModelCore(chaindir=args.chain_dir)
         core = hmc.model_core(args.model_core)
+    if args.aux_core is not None:
+        aux_hmc = co.HyperModelCore(corepath=args.aux_core)
+        aux_core = aux_hmc.model_core(args.model_core)
 # FIXME: i dont think the below actually makese sense
 elif args.model_core <= 0:
     hmc = co.HyperModelCore(corepath=args.core_path)
@@ -162,13 +168,15 @@ def save_stats(resampler_stats, outdir=args.outdir, file_name=args.save_as):
 
 
 # run resampler functions
-if args.model_core is None or args.model_core >= 0:
+if args.model_core is None or args.model_core >= 0 and args.aux_core is None:
     approx_likelihoods, core_samples_dict, core_samples_array = setup_resampler(pta=pta, core=core, nsamps=args.nsamps)
 elif args.model_core < 0:
    approx1, _, csamps1 = setup_resampler(pta=pta, core=core1, nsamps=np.floor(args.nsamps/2))
    approx2, _, csamps2 = setup_resampler(pta=pta, core=core2, nsamps=np.floor(args.nsamps/2))
    approx_likelihoods = np.append(approx1, approx2)
    core_samples_array = np.append(csamps1, csamps2, axis = 1)
+elif args.aux_core is not None:
+    pass
 else:
     print(" you ducked up somewhere ")
 print("Resampling... ")
