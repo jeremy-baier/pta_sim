@@ -73,6 +73,10 @@ def grubin(core, M=2, threshold=1.01):
     idx = np.where(Rhat > threshold)[0]  # where Rhat > threshold
     return Rhat, idx
 
-rhat, idx = grubin(c0)
+if args.hm:
+    rhat, idx = grubin(c0)
+elif args.hm is False:
+    rhat, idx = grubin(hmc)
+
 print(rhat)
 
