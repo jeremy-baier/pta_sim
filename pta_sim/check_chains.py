@@ -22,15 +22,6 @@ if args.hm:
 elif args.hm is False:
     c0 = co.Core(chaindir=args.dir)
 
-rhat, idx = grubin(c0)
-print(rhat)
-
-
-
-
-
-
-
 
 def grubin(core, M=2, threshold=1.01):
     """
@@ -82,4 +73,6 @@ def grubin(core, M=2, threshold=1.01):
     idx = np.where(Rhat > threshold)[0]  # where Rhat > threshold
     return Rhat, idx
 
+rhat, idx = grubin(c0)
+print(rhat)
 
