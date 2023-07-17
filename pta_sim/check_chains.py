@@ -16,10 +16,10 @@ parser.add_argument('--hm', dest='hm', action='store_true',
                     help='Whether or not run is a hypermodel run.')
 args = parser.parse_args()
 
-if hm:
+if args.hm:
     hmc = co.HyperModelCore(chaindir=args.dir)
 
-elif hm is False:
+elif args.hm is False:
     c0 = co.Core(chaindir=args.dir)
 
 rhat, idx = la_forge.diagnostics.grubin(c0)
