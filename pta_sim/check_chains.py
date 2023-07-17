@@ -74,9 +74,9 @@ def grubin(core, M=2, threshold=1.01):
     return Rhat, idx
 
 if args.hm:
-    rhat, idx = grubin(c0)
-elif args.hm is False:
     rhat, idx = grubin(hmc)
+elif args.hm is False:
+    rhat, idx = grubin(c0)
 
 print(rhat)
 
