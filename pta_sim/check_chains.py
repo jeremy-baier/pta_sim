@@ -18,6 +18,12 @@ args = parser.parse_args()
 
 if args.hm:
     hmc = co.HyperModelCore(chaindir=args.dir)
+    hmcs = {}
+    for c in ['c0', 'c1', 'c2', 'c3', 'c4']:
+        try:
+            hmcs[c] = hmc.model_core(['c0', 'c1', 'c2', 'c3', 'c4'].index(c))
+        except:
+            pass
 
 elif args.hm is False:
     c0 = co.Core(chaindir=args.dir)
@@ -74,9 +80,11 @@ def grubin(core, M=2, threshold=1.01):
     return Rhat, idx
 
 if args.hm:
-    rhat, idx = grubin(hmc)
+    for c in list(hmcs.keys()):
+    rhat, idx = grubin(hmcs[c])
+    print(c)
+    print(idx)
 elif args.hm is False:
     rhat, idx = grubin(c0)
-
-print(rhat)
+    print(idx)
 
