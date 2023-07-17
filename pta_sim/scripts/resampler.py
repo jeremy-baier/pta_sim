@@ -137,21 +137,20 @@ def resampler(core_samples_array, pta, processes=args.proc):
 
 def resampler_statistics(target_likelihoods, approx_likelihoods):
     resampler_stats = {}
-    resampler_stats['target_likelihoods'] = target_likelihoods
-    resampler_stats['approx_likelihoods'] = approx_likelihoods
+    likelihoods = {'target_likelihoods': target_likelihoods, 'approx_likelihoods': approx_likelihoods}
     # calculate the ln_likelihood ratios.
-    resampler_stats['ln_likelihood_ratios'] = target_likelihoods - approx_likelihoods
+    likelihoods['ln_likelihood_ratios'] = target_likelihoods - approx_likelihoods
     # the bayes factor is the average of the "weights"
-    resampler_stats['ln_bayes_factor'] = sum(resampler_stats['ln_likelihood_ratios']) / len(resampler_stats['ln_likelihood_ratios'])
+    resampler_stats['ln_bayes_factor'] = sum(likelihoods['ln_likelihood_ratios']) / len(likelihoods['ln_likelihood_ratios'])
     resampler_stats['bayes_factor'] = np.exp(resampler_stats['ln_bayes_factor'])
     print("Bayes factor:  ", resampler_stats['bayes_factor'])
-    resampler_stats['Ns'] = len(resampler_stats['ln_likelihood_ratios'])
-    resampler_stats['sigma_w'] = stdev(resampler_stats['ln_likelihood_ratios'])
+    resampler_stats['Ns'] = len(likelihoods['ln_likelihood_ratios'])
+    resampler_stats['sigma_w'] = stdev(likelihoods['ln_likelihood_ratios'])
     resampler_stats['n_eff'] = resampler_stats['Ns'] / ( 1. + ( resampler_stats['sigma_w'] / resampler_stats['bayes_factor'] ) ** 2)
     resampler_stats['efficiency'] = resampler_stats['n_eff'] / resampler_stats['Ns']
     resampler_stats['sigma_bf'] = resampler_stats['sigma_w'] / ( resampler_stats['efficiency'] * resampler_stats['Ns'] ) ** ( 1. / 2. )
     
-    return resampler_stats
+    return resampler_stats, likelihoods
 
 def save_stats(resampler_stats, outdir=args.outdir, file_name=args.save_as):
     #json cant handle np.array in diciontary so turn them into lists
@@ -161,7 +160,7 @@ def save_stats(resampler_stats, outdir=args.outdir, file_name=args.save_as):
     with open(outdir+file_name+'.json', 'w') as fp:
         #json.dump(resampler_stats, fp)
         fp.write(json.dumps(resampler_stats))
-    print("Saving results to ", args.outdir+args.save_as+'.pkl')
+    print("Saving results to ", outdir+file_name+'.json')
     #with open(outdir+file_name+'.pkl','wb') as fout:
      #       cp.dump(stats, fout)
     return 0
@@ -182,9 +181,11 @@ else:
 print("Resampling... ")
 target_likelihoods = resampler(core_samples_array=core_samples_array, pta=pta, processes=args.proc)
 
-resampling_results = resampler_statistics(target_likelihoods=target_likelihoods, approx_likelihoods=approx_likelihoods)
+resampling_stats, likelihoods = resampler_statistics(target_likelihoods=target_likelihoods, approx_likelihoods=approx_likelihoods)
 
-save_stats(resampling_results)
+save_stats(resampling_stats)
+l_filename = args.save_as + '_likelihoods'
+save_stats(likelihoods, file_name=l_filename)
 print("Done.")
 
 
