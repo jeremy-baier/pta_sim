@@ -81,9 +81,9 @@ def grubin(core, M=2, threshold=1.01):
 
 if args.hm:
     for c in list(hmcs.keys()):
-    rhat, idx = grubin(hmcs[c])
-    print(c)
-    print(idx)
+        rhat, idx = grubin(hmcs[c])
+        print(c)
+        print(idx)
 elif args.hm is False:
     rhat, idx = grubin(c0)
     print(idx)
