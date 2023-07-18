@@ -22,7 +22,9 @@ if args.hm:
     for c in ['c0', 'c1', 'c2', 'c3', 'c4']:
         try:
             hmcs[c] = hmc.model_core(['c0', 'c1', 'c2', 'c3', 'c4'].index(c))
+            print("added c: ", c)
         except:
+            print("not added c: ", c)
             pass
 
 elif args.hm is False:
