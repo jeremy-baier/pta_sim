@@ -20,6 +20,7 @@ if args.hm:
     hmc = co.HyperModelCore(chaindir=args.dir)
     hmcs = {}
     for c in ['c0', 'c1', 'c2', 'c3', 'c4']:
+        hmcs['c0'] = hmc.model_core(0)
         try:
             hmcs[c] = hmc.model_core(['c0', 'c1', 'c2', 'c3', 'c4'].index(c))
             print("added c: ", c)
