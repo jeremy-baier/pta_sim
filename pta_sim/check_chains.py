@@ -19,13 +19,11 @@ args = parser.parse_args()
 if args.hm:
     hmc = co.HyperModelCore(chaindir=args.dir)
     hmcs = {}
-    for c in ['c0', 'c1', 'c2', 'c3', 'c4']:
-        hmcs['c0'] = hmc.model_core(0)
+    core_array = ['c0', 'c1', 'c2', 'c3', 'c4'] 
+    for c in core_array:
         try:
-            hmcs[c] = hmc.model_core(['c0', 'c1', 'c2', 'c3', 'c4'].index(c))
-            print("added c: ", c)
+            hmcs[c] = hmc.model_core(core_array.index(c))
         except:
-            print("not added c: ", c)
             pass
 
 elif args.hm is False:
