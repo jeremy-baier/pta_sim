@@ -4,6 +4,7 @@
 # Code for checking chain convergence
 import numpy as np
 import la_forge.core as co
+import la_forge.diagnostics as dg
 import la_forge
 import argparse
 
@@ -81,10 +82,10 @@ def grubin(core, M=2, threshold=1.01):
 print(hmcs)
 if args.hm:
     for c in list(hmcs.keys()):
-        rhat, idx = grubin(hmcs[c])
+        rhat, idx = dg.grubin(hmcs[c])
         print(c)
         print(idx)
 elif args.hm is False:
-    rhat, idx = grubin(c0)
+    rhat, idx = dg.grubin(c0)
     print(idx)
 
