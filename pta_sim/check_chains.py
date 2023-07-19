@@ -26,7 +26,7 @@ if args.hm:
             hmcs[c] = hmc.model_core(['c0', 'c1', 'c2', 'c3', 'c4'].index(c))
         except:
             pass
-    eemu.odds_ratio(hmc.chain, uncertainty=False)
+    print("bf: ", eemu.odds_ratio(hmc.chain, uncertainty=False))
 
 elif args.hm is False:
     c0 = co.Core(chaindir=args.dir)
