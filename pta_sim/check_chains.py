@@ -7,6 +7,7 @@ import la_forge.core as co
 import la_forge.diagnostics as dg
 import la_forge
 import argparse
+import enterprise_extensions.model_utils as eemu
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dir', dest='dir', action='store',
@@ -25,6 +26,7 @@ if args.hm:
             hmcs[c] = hmc.model_core(['c0', 'c1', 'c2', 'c3', 'c4'].index(c))
         except:
             pass
+    eemu.odds_ratio(hmc.chain)
 
 elif args.hm is False:
     c0 = co.Core(chaindir=args.dir)
