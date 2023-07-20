@@ -116,7 +116,7 @@ def setup_resampler(pta, core, nsamps):
 def resampler(core_samples_array, pta, processes=args.proc):
     if processes == 1:
         target_likelihoods = np.array([])
-        for i in range(len(core_samples_array['lnlike'][0])):
+        for i in range(len(core_samples_array['lnlike'])):
             target_likelihoods = np.append(
                 target_likelihoods,
                 pta.get_lnlikelihood({key:core_samples[key][i] for key in core_samples.keys()})
