@@ -40,12 +40,12 @@ if args.hm:
         print(idx)
     # save HyperModelCore
     if args.save:
-        save_as = args.dir.split('/')[-1]
+        save_as = args.dir.split('/')[-2]
         hmc.save(args.dir+save_as)
 elif args.hm is False:
     c0 = co.Core(chaindir=args.dir)
     if args.save:
-        save_as = args.dir.split('/')[-1]
+        save_as = args.dir.split('/')[-2]
         c0.save(args.dir+save_as)
     # check for convergence
     rhat, idx = dg.grubin(c0)
