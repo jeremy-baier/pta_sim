@@ -39,12 +39,12 @@ if args.hm:
         print(c)
         print(idx)
     # save HyperModelCore
-    if save:
+    if args.save:
         save_as = args.dir.split('/')[-1]
         hmc.save(args.dir+save_as)
 elif args.hm is False:
     c0 = co.Core(chaindir=args.dir)
-    if save:
+    if args.save:
         save_as = args.dir.split('/')[-1]
         c0.save(args.dir+save_as)
     # check for convergence
