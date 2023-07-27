@@ -26,7 +26,7 @@ from pta_sim.bayes import chain_length_bool, save_core, get_freqs, filter_psr_pa
 args = parse_sim.arguments()
 
 logging.basicConfig(format="%(levelname)s: %(name)s: %(message)s", level=logging.INFO)
-
+os.makedirs(args.outdir,exist_ok = True)
 
 with open(args.noisepath, 'r') as fin:
     noise =json.load(fin)
