@@ -172,7 +172,7 @@ else:
                                         orf=args.orf2,
                                         components=args.n_gwbfreqs,
                                         gamma_val=args.gamma_gw,
-                                        name='gw_st')
+                                        name='gw')
     cs = blocks.common_red_noise_block(psd=args.psd,
                                         prior='log-uniform',
                                         Tspan=args.tspan,
@@ -200,7 +200,7 @@ else:
                             'chrom_df':None,
                             'dm_df':None,
                             'red_var': False,
-                            'tm_marg':False,
+                            'tm_marg':True,
                             'vary_dm':False,
                             'tm_svd':False,
                             'vary_chrom':False})
@@ -228,6 +228,20 @@ else:
 
     ptas = {0:pta_hd,
              1:pta_alt_pol}
+    model_labels.append(['0', args.orf])
+    model_labels.append(['1', args.orf2])
+    # make a dictionary in the file for model labels and model params
+    model_params = {}
+    for ky, pta in ptas.items():
+        model_params.update({str(ky) : pta.param_names})
+    with open(args.outdir+'/model_params.json' , 'w') as fout:
+        json.dump(model_params, fout, sort_keys=True,
+              indent=4, separators=(',', ': '))
+    with open(args.outdir+'/model_labels.json' , 'w') as fout:
+        json.dump(model_labels, fout, sort_keys=True,
+              indent=4, separators=(',', ': '))
+        
+
 
     if args.mk_ptapkl:
         print("Saving pickled pta to file ... ")
