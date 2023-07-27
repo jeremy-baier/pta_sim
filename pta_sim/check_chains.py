@@ -16,6 +16,9 @@ parser.add_argument('--dir', dest='dir', action='store',
 parser.add_argument('--hm', dest='hm', action='store_true',
                     default=False,
                     help='Whether or not run is a hypermodel run.')
+parser.add_argument('--save', dest='save', action='store_true',
+                    default=False,
+                    help='Whether or not to save the chain as a la_forge.core')
 args = parser.parse_args()
 
 if args.hm:
@@ -27,17 +30,24 @@ if args.hm:
         except:
             pass
     print("bf: ", eemu.odds_ratio(hmc.get_param('nmodel'), uncertainty=False))
-
-elif args.hm is False:
-    c0 = co.Core(chaindir=args.dir)
-
-
-if args.hm:
+    # check for convergence in nmodel
+    rhat, idx = dg.grubin(hmc)
+    print("nmod convergence : ", rhat[-1])
+    # check for convergence in all subcores
     for c in list(hmcs.keys()):
         rhat, idx = dg.grubin(hmcs[c])
         print(c)
         print(idx)
+    # save HyperModelCore
+    if args.save:
+        save_as = args.dir.split('/')[-2]
+        hmc.save(args.dir+save_as)
 elif args.hm is False:
+    c0 = co.Core(chaindir=args.dir)
+    if args.save:
+        save_as = args.dir.split('/')[-2]
+        c0.save(args.dir+save_as)
+    # check for convergence
     rhat, idx = dg.grubin(c0)
     print(idx)
 
