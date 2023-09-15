@@ -279,7 +279,7 @@ parser.add_argument('--wideband', dest='wideband', action='store_true',
 parser.add_argument('--writeHotChains', dest='writeHotChains',
                     action='store_true', default=False,
                     help='Option to use write hot chains with parallel tempering.')
-parser.add_argument('--dt', dest='dt_var', action='store', default='30,15,7,3', type=str)
+parser.add_argument('--dt', dest='dt_vars', action='store', default='30,15,7,3', type=str)
 parser.add_argument('--nfreq', dest='Nfreq_vars', action='store', default='150,100,50', type=str)
 parser.add_argument('--anm', dest='anm_types', action='store', default='td,fd,ridge', type=str)
 # parse arguments
