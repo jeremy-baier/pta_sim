@@ -19,6 +19,9 @@ parser.add_argument('--hm', dest='hm', action='store_true',
 parser.add_argument('--save', dest='save', action='store_true',
                     default=False,
                     help='Whether or not to save the chain as a la_forge.core')
+parser.add_argument('--core_path', dest='core_path', action='store', 
+                    default=None,
+                    help='Path to la_forge core to check for convergence.')
 args = parser.parse_args()
 
 if args.hm:
@@ -43,7 +46,10 @@ if args.hm:
         save_as = args.dir.split('/')[-2]
         hmc.save(args.dir+save_as)
 elif args.hm is False:
-    c0 = co.Core(chaindir=args.dir)
+    if args.core_path is not None:
+        c0 = co.Core(corepath=args.core_path)
+    elif args.dir is not None:
+        c0 = co.Core(chaindir=args.dir)
     if args.save:
         save_as = args.dir.split('/')[-2]
         c0.save(args.dir+save_as)
