@@ -141,12 +141,11 @@ def resampler_statistics(target_likelihoods, approx_likelihoods):
     # calculate the ln_likelihood ratios.
     likelihoods['ln_likelihood_ratios'] = target_likelihoods - approx_likelihoods
     # the bayes factor is the average of the "weights"
-    resampler_stats['ln_bayes_factor'] = sum(likelihoods['ln_likelihood_ratios']) / len(likelihoods['ln_likelihood_ratios'])
-    resampler_stats['bayes_factor'] = np.exp(resampler_stats['ln_bayes_factor'])
+    resampler_stats['bayes_factor'] = sum(np.exp(likelihoods['ln_likelihood_ratios'])) / len(likelihoods['ln_likelihood_ratios'])
     print("Bayes factor:  ", resampler_stats['bayes_factor'])
     resampler_stats['Ns'] = len(likelihoods['ln_likelihood_ratios'])
-    resampler_stats['sigma_w'] = stdev(likelihoods['ln_likelihood_ratios'])
-    resampler_stats['n_eff'] = resampler_stats['Ns'] / ( 1. + ( resampler_stats['sigma_w'] / resampler_stats['ln_bayes_factor'] ) ** 2)
+    resampler_stats['sigma_w'] = stdev(np.exp(likelihoods['ln_likelihood_ratios']))
+    resampler_stats['n_eff'] = resampler_stats['Ns'] / ( 1. + ( resampler_stats['sigma_w'] / resampler_stats['bayes_factor'] ) ** 2)
     resampler_stats['efficiency'] = resampler_stats['n_eff'] / resampler_stats['Ns']
     resampler_stats['sigma_bf'] = resampler_stats['sigma_w'] / ( resampler_stats['efficiency'] * resampler_stats['Ns'] ) ** ( 1. / 2. )
     
