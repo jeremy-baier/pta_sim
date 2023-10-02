@@ -9,6 +9,8 @@ timdir = '/home/jeffrey.hazboun/nanograv/dsa2000_simulations/data_jsh/partim/'
 pardir = '/home/jeffrey.hazboun/nanograv/dsa2000_simulations/data_jsh/partim/'
 pardir_no_dmx = '/home/jeffrey.hazboun/nanograv/dsa2000_simulations/dsa_partim_181214'
 
+parser.add_argument('--ACEprior', dest='ACEprior', action='store_true',
+                    default=False, help='Flag to turn on use of ACE SWEPAM prior.')
 parser.add_argument('--A_dm', dest='A_dm', action='store',
                     type=float, default=0.0,
                     help='Chromatic f^-2 Red Noise Amplitude to Simulate')
@@ -214,6 +216,8 @@ parser.add_argument('--spat_corr_info', dest='spat_corr_info',
                     help='Whether to write out the spatial correlation information')
 parser.add_argument('--start_time', dest='start_time', action='store',
                     type=float, default=None, help='Start MJD for slicing. In days.')
+parser.add_argument('--sw_bins', dest='sw_bins', action='store',
+                    type=str, default=None, help='SW bins size in MJD')
 parser.add_argument('--sw_fit_path', dest='sw_fit_path',
                     action='store', default=None, type=str,
                     help='Path to pickled list with best fit values and cov matrix.')
@@ -275,6 +279,9 @@ parser.add_argument('--wideband', dest='wideband', action='store_true',
 parser.add_argument('--writeHotChains', dest='writeHotChains',
                     action='store_true', default=False,
                     help='Option to use write hot chains with parallel tempering.')
+parser.add_argument('--dt', dest='dt_vars', action='store', default='30,15,7,3', type=str)
+parser.add_argument('--nfreq', dest='Nfreq_vars', action='store', default='150,100,50', type=str)
+parser.add_argument('--anm', dest='anm_types', action='store', default='td,fd,ridge', type=str)
 # parse arguments
 args = parser.parse_args()
 
