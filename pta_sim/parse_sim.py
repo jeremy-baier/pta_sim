@@ -291,8 +291,8 @@ elif len(args.psr_list)==1:
 
 def arguments(new_args=False):
     if new_args is True:
-	    return parser
+		return parser
     elif new_args is False:
-	# parse arguments
-	    args = parser.parse_args()
+		# parse arguments
+		args = parser.parse_args()
 		return args
