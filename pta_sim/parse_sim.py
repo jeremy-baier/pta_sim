@@ -292,3 +292,5 @@ elif len(args.psr_list)==1:
 
 def arguments():
     return args
+def pass_parser():
+    return parser
