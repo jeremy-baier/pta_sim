@@ -290,9 +290,9 @@ elif len(args.psr_list)==1:
     args.psr_list = np.loadtxt(args.psr_list[0], dtype='S25').astype('U25')
 
 def arguments(new_args=False):
-    if new_args=True:
+    if new_args is True:
 	    return parser
-    elif new_args=False:
+    elif new_args is False:
 	# parse arguments
 	    args = parser.parse_args()
     	return args
