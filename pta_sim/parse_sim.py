@@ -282,6 +282,10 @@ parser.add_argument('--writeHotChains', dest='writeHotChains',
 parser.add_argument('--dt', dest='dt_vars', action='store', default='30,15,7,3', type=str)
 parser.add_argument('--nfreq', dest='Nfreq_vars', action='store', default='150,100,50', type=str)
 parser.add_argument('--anm', dest='anm_types', action='store', default='td,fd,ridge', type=str)
+
+def pass_parser():
+    return parser
+
 # parse arguments
 args = parser.parse_args()
 
@@ -292,5 +296,3 @@ elif len(args.psr_list)==1:
 
 def arguments():
     return args
-def pass_parser():
-    return parser
