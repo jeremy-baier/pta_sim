@@ -283,16 +283,16 @@ parser.add_argument('--dt', dest='dt_vars', action='store', default='30,15,7,3',
 parser.add_argument('--nfreq', dest='Nfreq_vars', action='store', default='150,100,50', type=str)
 parser.add_argument('--anm', dest='anm_types', action='store', default='td,fd,ridge', type=str)
 
-def pass_parser():
-    return parser
-
-# parse arguments
-args = parser.parse_args()
 
 if args.psr_list is None:
     pass
 elif len(args.psr_list)==1:
     args.psr_list = np.loadtxt(args.psr_list[0], dtype='S25').astype('U25')
 
-def arguments():
-    return args
+def arguments(new_args=False):
+    if new_args=True:
+	return parser
+    elif new_args=False:
+	# parse arguments
+	args = parser.parse_args()
+    	return args
