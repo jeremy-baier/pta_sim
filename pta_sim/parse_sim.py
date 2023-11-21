@@ -290,9 +290,17 @@ parser.add_argument('--anm', dest='anm_types', action='store', default='td,fd,ri
 #     args.psr_list = np.loadtxt(args.psr_list[0], dtype='S25').astype('U25')
 
 def arguments(new_args=False):
-  if new_args is True:
-    return parser
-  elif new_args is False:
+    if new_args is True:
+     return parser
+    elif new_args is False:
      # parse arguments
      args = parser.parse_args()
      return args
+  
+def get_15yr_psrs():
+     with open("./pars.txt", "r") as file:
+        2
+        psr_list = [par.split('_')[0] for par in file.readlines() if 'log10_A' not in par and 'gw' not in par]
+     return psr_list
+
+
