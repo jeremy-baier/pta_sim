@@ -299,7 +299,6 @@ def arguments(new_args=False):
   
 def get_15yr_psrs():
      with open("./pars.txt", "r") as file:
-        2
         psr_list = [par.split('_')[0] for par in file.readlines() if 'log10_A' not in par and 'gw' not in par]
      return psr_list
 
